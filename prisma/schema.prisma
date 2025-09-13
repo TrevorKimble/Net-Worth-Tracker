@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Monthly Input Table - Simple estimates
+model MonthlyInput {
+  id        Int      @id @default(autoincrement())
+  month     Int      // 1-12
+  year      Int
+  cash      Float    @default(0)
+  stocks    Float    @default(0)
+  crypto    Float    @default(0)
+  gold      Float    @default(0)
+  silver    Float    @default(0)
+  misc      Float    @default(0)
+  notes     String?
+  createdAt String   // Store as readable date string like "09/13/25"
+  updatedAt String   // Store as readable date string like "09/13/25"
+
+  @@unique([month, year])
+  @@map("monthly_inputs")
+}
+
+// Personal Portfolio - Detailed tracking
+model PersonalAsset {
+  id          Int      @id @default(autoincrement())
+  symbol      String   // e.g., "FXAIX", "GOLD", "SILVER", "CASH"
+  name        String   // e.g., "Fidelity 500 Index Fund", "Gold", "Silver", "Bank Account"
+  type        AssetType
+  quantity    Float    // shares, ounces, dollars, etc.
+  currentPrice Float   @default(0) // current market price
+  totalValue  Float    @default(0) // quantity * currentPrice
+  lastUpdated String   // Store as readable date string like "09/13/25"
+  createdAt   String   // Store as readable date string like "09/13/25"
+  updatedAt   String   // Store as readable date string like "09/13/25"
+
+  @@unique([symbol])
+  @@map("personal_assets")
+}
+
+// Solo 401k Trust Portfolio - Detailed tracking
+model Solo401kAsset {
+  id          Int      @id @default(autoincrement())
+  symbol      String   // e.g., "FXAIX", "GOLD", "SILVER"
+  name        String   // e.g., "Fidelity 500 Index Fund", "Gold", "Silver"
+  type        AssetType
+  quantity    Float    // shares, ounces, etc.
+  currentPrice Float   @default(0) // current market price
+  totalValue  Float    @default(0) // quantity * currentPrice
+  lastUpdated String   // Store as readable date string like "09/13/25"
+  createdAt   String   // Store as readable date string like "09/13/25"
+  updatedAt   String   // Store as readable date string like "09/13/25"
+
+  @@unique([symbol])
+  @@map("solo_401k_assets")
+}
+
+// Detailed logging for all changes
+model AssetLog {
+  id          Int      @id @default(autoincrement())
+  portfolio   PortfolioType // PERSONAL or SOLO_401K
+  symbol      String
+  action      LogAction // BUY, SELL, UPDATE_PRICE, MANUAL_UPDATE
+  quantity    Float?   // for buy/sell actions
+  price       Float    // price at time of action
+  totalValue  Float    // total value at time of action
+  notes       String?
+  createdAt   String   // Store as readable date string like "09/13/25"
+
+  @@map("asset_logs")
+}
+
+enum AssetType {
+  CASH
+  STOCK
+  CRYPTO
+  GOLD
+  SILVER
+  MISC
+}
+
+enum PortfolioType {
+  PERSONAL
+  SOLO_401K
+}
+
+enum LogAction {
+  BUY
+  SELL
+  UPDATE_PRICE
+  MANUAL_UPDATE
+  INITIAL_ADD
+}
