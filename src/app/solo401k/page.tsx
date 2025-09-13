@@ -311,9 +311,6 @@ export default function Solo401kPortfolioPage() {
                                 style={{ width: `${((10 - countdown) / 10) * 100}%` }}
                               ></div>
                             </div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              Next update in {countdown}s
-                            </div>
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-medium">{formatCurrency(asset.totalValue)}</td>
