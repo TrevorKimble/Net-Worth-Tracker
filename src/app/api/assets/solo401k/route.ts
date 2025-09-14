@@ -18,16 +18,26 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { symbol, name, type, quantity } = body
+    const { symbol, name, type, quantity, notes } = body
 
     if (!symbol || !name || !type || quantity === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Get current price
-    const priceService = PriceService.getInstance()
-    const currentPrice = await priceService.getPrice(symbol, type as any)
-    const totalValue = quantity * currentPrice
+    // Get current price and calculate total value
+    let currentPrice: number
+    let totalValue: number
+    
+    if (type === 'CASH' || type === 'MISC') {
+      // For cash and misc, quantity IS the total value
+      currentPrice = 1.00
+      totalValue = quantity
+    } else {
+      // For stocks, crypto, gold, silver - multiply quantity by price
+      const priceService = PriceService.getInstance()
+      currentPrice = await priceService.getPrice(symbol, type as any)
+      totalValue = quantity * currentPrice
+    }
 
     // Format current date as MM/DD/YY
     const now = new Date()
@@ -42,6 +52,7 @@ export async function POST(request: NextRequest) {
         quantity,
         currentPrice,
         totalValue,
+        notes: notes || null,
         lastUpdated: currentDate,
         createdAt: currentDate,
         updatedAt: currentDate

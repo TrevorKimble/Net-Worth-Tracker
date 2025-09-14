@@ -19,6 +19,7 @@ interface PersonalAsset {
   quantity: number
   currentPrice: number
   totalValue: number
+  notes?: string
   lastUpdated: string
 }
 
@@ -30,8 +31,9 @@ export default function PersonalPortfolioPage() {
   const [newAsset, setNewAsset] = useState({
     symbol: '',
     name: '',
-    type: 'STOCK' as const,
-    quantity: 0
+    type: 'STOCK' as 'CASH' | 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER' | 'MISC',
+    quantity: 0,
+    notes: ''
   })
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export default function PersonalPortfolioPage() {
       if (response.ok) {
         toast.success('Asset added successfully!')
         setAddDialogOpen(false)
-        setNewAsset({ symbol: '', name: '', type: 'STOCK', quantity: 0 })
+        setNewAsset({ symbol: '', name: '', type: 'STOCK', quantity: 0, notes: '' })
         fetchAssets()
       } else {
         toast.error('Failed to add asset')
@@ -192,31 +194,54 @@ export default function PersonalPortfolioPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={handleAddAsset} className="space-y-4">
-                    <div>
-                      <Label htmlFor="symbol">Symbol</Label>
-                      <Input
-                        id="symbol"
-                        value={newAsset.symbol}
-                        onChange={(e) => setNewAsset({ ...newAsset, symbol: e.target.value.toUpperCase() })}
-                        placeholder="e.g., FXAIX, AAPL, BTC"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="name">Name</Label>
-                      <Input
-                        id="name"
-                        value={newAsset.name}
-                        onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
-                        placeholder="e.g., Fidelity 500 Index Fund"
-                        required
-                      />
-                    </div>
+                    {(newAsset.type === 'STOCK' || newAsset.type === 'CRYPTO') && (
+                      <div>
+                        <Label htmlFor="symbol">Symbol</Label>
+                        <Input
+                          id="symbol"
+                          value={newAsset.symbol}
+                          onChange={(e) => setNewAsset({ ...newAsset, symbol: e.target.value.toUpperCase() })}
+                          placeholder={newAsset.type === 'STOCK' ? "e.g., FXAIX, AAPL" : "e.g., BTC, ETH"}
+                          required
+                        />
+                      </div>
+                    )}
+                    {(newAsset.type === 'STOCK' || newAsset.type === 'CRYPTO') && (
+                      <div>
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                          id="name"
+                          value={newAsset.name}
+                          onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
+                          placeholder={newAsset.type === 'STOCK' ? "e.g., Fidelity 500 Index Fund" : "e.g., Bitcoin"}
+                          required
+                        />
+                      </div>
+                    )}
                     <div>
                       <Label htmlFor="type">Type</Label>
                       <Select
                         value={newAsset.type}
-                        onValueChange={(value: any) => setNewAsset({ ...newAsset, type: value })}
+                        onValueChange={(value: 'CASH' | 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER' | 'MISC') => {
+                          const updatedAsset = { ...newAsset, type: value }
+                          
+                          // Auto-populate symbol and name for precious metals and cash
+                          if (value === 'GOLD') {
+                            updatedAsset.symbol = 'GOLD'
+                            updatedAsset.name = 'Gold'
+                          } else if (value === 'SILVER') {
+                            updatedAsset.symbol = 'SILVER'
+                            updatedAsset.name = 'Silver'
+                          } else if (value === 'CASH') {
+                            updatedAsset.symbol = 'CASH'
+                            updatedAsset.name = 'Cash'
+                          } else if (value === 'MISC') {
+                            updatedAsset.symbol = 'MISC'
+                            updatedAsset.name = 'Miscellaneous'
+                          }
+                          
+                          setNewAsset(updatedAsset)
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -232,15 +257,32 @@ export default function PersonalPortfolioPage() {
                       </Select>
                     </div>
                     <div>
-                      <Label htmlFor="quantity">Quantity</Label>
+                      <Label htmlFor="quantity">
+                        {newAsset.type === 'CASH' || newAsset.type === 'MISC' ? 'Total Value' : 'Quantity'} 
+                        {newAsset.type === 'GOLD' || newAsset.type === 'SILVER' ? ' (ounces)' : 
+                         newAsset.type === 'CASH' || newAsset.type === 'MISC' ? ' (dollars)' : ' (shares)'}
+                      </Label>
                       <Input
                         id="quantity"
                         type="number"
                         step="0.000001"
                         value={newAsset.quantity}
                         onChange={(e) => setNewAsset({ ...newAsset, quantity: parseFloat(e.target.value) || 0 })}
-                        placeholder="e.g., 100 (shares), 0.5 (ounces)"
+                        placeholder={
+                          newAsset.type === 'GOLD' || newAsset.type === 'SILVER' ? "e.g., 1.5 (ounces)" :
+                          newAsset.type === 'CASH' || newAsset.type === 'MISC' ? "e.g., 5000 (total dollars)" :
+                          "e.g., 100 (shares)"
+                        }
                         required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="notes">Notes (Optional)</Label>
+                      <Input
+                        id="notes"
+                        value={newAsset.notes}
+                        onChange={(e) => setNewAsset({ ...newAsset, notes: e.target.value })}
+                        placeholder="e.g., Bank account, Physical coins, etc."
                       />
                     </div>
                     <Button type="submit" className="w-full">
@@ -281,6 +323,7 @@ export default function PersonalPortfolioPage() {
                       <th className="text-right py-3 px-4 font-medium">Quantity</th>
                       <th className="text-right py-3 px-4 font-medium">Price</th>
                       <th className="text-right py-3 px-4 font-medium">Total Value</th>
+                      <th className="text-left py-3 px-4 font-medium">Notes</th>
                       <th className="text-right py-3 px-4 font-medium">Last Updated</th>
                     </tr>
                   </thead>
@@ -314,6 +357,7 @@ export default function PersonalPortfolioPage() {
                           </div>
                         </td>
                         <td className="py-3 px-4 text-right font-mono font-medium">{formatCurrency(asset.totalValue)}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{asset.notes || '-'}</td>
                         <td className="py-3 px-4 text-right text-sm text-gray-600">{formatLastUpdated(asset.lastUpdated)}</td>
                       </tr>
                     ))}

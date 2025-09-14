@@ -38,6 +38,7 @@ model PersonalAsset {
   quantity    Float    // shares, ounces, dollars, etc.
   currentPrice Float   @default(0) // current market price
   totalValue  Float    @default(0) // quantity * currentPrice
+  notes       String?  // Optional notes about the asset
   lastUpdated String   // Store as readable date string like "09/13/25"
   createdAt   String   // Store as readable date string like "09/13/25"
   updatedAt   String   // Store as readable date string like "09/13/25"
@@ -55,6 +56,7 @@ model Solo401kAsset {
   quantity    Float    // shares, ounces, etc.
   currentPrice Float   @default(0) // current market price
   totalValue  Float    @default(0) // quantity * currentPrice
+  notes       String?  // Optional notes about the asset
   lastUpdated String   // Store as readable date string like "09/13/25"
   createdAt   String   // Store as readable date string like "09/13/25"
   updatedAt   String   // Store as readable date string like "09/13/25"
