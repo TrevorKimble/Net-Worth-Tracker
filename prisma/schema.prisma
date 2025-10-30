@@ -65,19 +65,19 @@ model Solo401kAsset {
   @@map("solo_401k_assets")
 }
 
-// Detailed logging for all changes
-model AssetLog {
+// Generic activity log table for all database changes (populated by database triggers)
+model ActivityLog {
   id          Int      @id @default(autoincrement())
-  portfolio   PortfolioType // PERSONAL or SOLO_401K
-  symbol      String
-  action      LogAction // BUY, SELL, UPDATE_PRICE, MANUAL_UPDATE
-  quantity    Float?   // for buy/sell actions
-  price       Float    // price at time of action
-  totalValue  Float    // total value at time of action
-  notes       String?
-  createdAt   String   // Store as readable date string like "09/13/25"
+  table_name  String   // Table name that was modified
+  record_id   Int      // ID of the record that was modified
+  operation   String   // INSERT, UPDATE, or DELETE
+  old_values  String?  // JSON string of old values (for UPDATE/DELETE)
+  new_values  String?  // JSON string of new values (for INSERT/UPDATE)
+  created_at  String   // Timestamp of the change
 
-  @@map("asset_logs")
+  @@index([table_name, record_id])
+  @@index([created_at])
+  @@map("activity_logs")
 }
 
 enum AssetType {
@@ -89,15 +89,3 @@ enum AssetType {
   MISC
 }
 
-enum PortfolioType {
-  PERSONAL
-  SOLO_401K
-}
-
-enum LogAction {
-  BUY
-  SELL
-  UPDATE_PRICE
-  MANUAL_UPDATE
-  INITIAL_ADD
-}

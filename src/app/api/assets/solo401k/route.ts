@@ -59,19 +59,6 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Log the action
-    await prisma.assetLog.create({
-      data: {
-        portfolio: 'SOLO_401K',
-        symbol,
-        action: 'INITIAL_ADD',
-        price: currentPrice,
-        totalValue,
-        notes: `Initial add: ${quantity} ${symbol} at $${currentPrice}`,
-        createdAt: currentDate
-      }
-    })
-
     return NextResponse.json(asset)
   } catch (error) {
     console.error('Error creating Solo 401k asset:', error)
@@ -121,19 +108,6 @@ export async function PUT(request: NextRequest) {
       }
     })
 
-    // Log the action
-    await prisma.assetLog.create({
-      data: {
-        portfolio: 'SOLO_401K',
-        symbol,
-        action: 'MANUAL_UPDATE',
-        price: currentPrice,
-        totalValue,
-        notes: `Manual update: ${quantity} ${symbol} at $${currentPrice}`,
-        createdAt: currentDate
-      }
-    })
-
     return NextResponse.json(asset)
   } catch (error) {
     console.error('Error updating Solo 401k asset:', error)
@@ -162,23 +136,6 @@ export async function DELETE(request: NextRequest) {
     // Delete asset
     await prisma.solo401kAsset.delete({
       where: { id: parseInt(id) }
-    })
-
-    // Format current date as MM/DD/YY
-    const now = new Date()
-    const currentDate = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${String(now.getFullYear()).slice(-2)}`
-
-    // Log the deletion
-    await prisma.assetLog.create({
-      data: {
-        portfolio: 'SOLO_401K',
-        symbol: asset.symbol,
-        action: 'SELL',
-        price: asset.currentPrice,
-        totalValue: 0,
-        notes: `Asset deleted: ${asset.symbol}`,
-        createdAt: currentDate
-      }
     })
 
     return NextResponse.json({ success: true })
