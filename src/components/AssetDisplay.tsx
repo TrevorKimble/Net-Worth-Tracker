@@ -166,7 +166,7 @@ export function AssetDisplay({
               </thead>
               <tbody>
                 {asset_list.map((asset) => (
-                  <tr key={asset.id} className="border-b hover:bg-gray-50">
+                  <tr key={asset.id} className="border-b hover:bg-accent/50">
                     <td className="py-3 px-4 font-mono font-medium">{asset.symbol}</td>
                     <td className="py-3 px-4">{asset.name}</td>
                     <td className="py-3 px-4">
@@ -182,17 +182,7 @@ export function AssetDisplay({
                       </span>
                     </td>
                     <td className="py-3 px-4 text-right font-mono">{asset.quantity.toLocaleString()}</td>
-                    <td className="py-3 px-4 text-right">
-                      <div className="font-mono">{formatCurrency(asset.currentPrice)}</div>
-                      <div className="mt-1">
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div 
-                            className="bg-green-500 h-1.5 rounded-full transition-all duration-1000 ease-linear"
-                            style={{ width: `${((10 - countdown) / 10) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                    </td>
+                    <td className="py-3 px-4 text-right font-mono">{formatCurrency(asset.currentPrice)}</td>
                     <td className="py-3 px-4 text-right font-mono font-medium">{formatCurrency(asset.totalValue)}</td>
                     <td className="py-3 px-4 text-sm text-gray-600">{asset.notes || '-'}</td>
                     <td className="py-3 px-4 text-right text-sm text-gray-600">{formatLastUpdated(asset.lastUpdated)}</td>

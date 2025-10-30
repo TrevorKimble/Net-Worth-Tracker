@@ -1,6 +1,7 @@
 'use client'
 
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
+import { useState } from 'react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, Sector } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface AssetData {
@@ -16,6 +17,8 @@ interface AssetPieChartProps {
 }
 
 export function AssetPieChart({ data, title = 'Asset Breakdown', description }: AssetPieChartProps) {
+  const [active_index, setActiveIndex] = useState<number | undefined>(undefined)
+
   // Vibrant colors for different asset types
   const COLORS = {
     CASH: '#22c55e', // Green
@@ -113,6 +116,24 @@ export function AssetPieChart({ data, title = 'Asset Breakdown', description }: 
               outerRadius={120}
               fill="#8884d8"
               dataKey="value"
+              activeIndex={active_index}
+              onMouseEnter={(_, index) => setActiveIndex(index)}
+              onMouseLeave={() => setActiveIndex(undefined)}
+              activeShape={(props: any) => {
+                const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props
+                return (
+                  <Sector
+                    cx={cx}
+                    cy={cy}
+                    innerRadius={innerRadius}
+                    outerRadius={outerRadius + 5}
+                    startAngle={startAngle}
+                    endAngle={endAngle}
+                    fill={fill}
+                    opacity={0.9}
+                  />
+                )
+              }}
             >
               {filteredData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={getColor(entry.type)} />
