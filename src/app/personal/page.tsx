@@ -1,15 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { DollarSign, Plus, ArrowLeft, TrendingUp, RefreshCw } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ArrowLeft, DollarSign, TrendingUp, RefreshCw } from "lucide-react"
 import Link from "next/link"
-import { toast } from "sonner"
+import { AssetDisplay } from "@/components/AssetDisplay"
 
 interface PersonalAsset {
   id: number
@@ -26,15 +21,7 @@ interface PersonalAsset {
 export default function PersonalPortfolioPage() {
   const [assets, setAssets] = useState<PersonalAsset[]>([])
   const [loading, setLoading] = useState(true)
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [countdown, setCountdown] = useState(10)
-  const [newAsset, setNewAsset] = useState({
-    symbol: '',
-    name: '',
-    type: 'STOCK' as 'CASH' | 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER' | 'MISC',
-    quantity: 0,
-    notes: ''
-  })
 
   useEffect(() => {
     fetchAssets()
@@ -65,36 +52,63 @@ export default function PersonalPortfolioPage() {
       setCountdown(10) // Reset countdown when new data is fetched
     } catch (error) {
       console.error('Error fetching assets:', error)
-      toast.error('Failed to fetch assets')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleAddAsset = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    try {
-      const response = await fetch('/api/assets/personal', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newAsset),
-      })
+  const handleAddAsset = async (asset_data: Omit<PersonalAsset, 'id' | 'currentPrice' | 'totalValue' | 'lastUpdated'>) => {
+    const response = await fetch('/api/assets/personal', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(asset_data),
+    })
 
-      if (response.ok) {
-        toast.success('Asset added successfully!')
-        setAddDialogOpen(false)
-        setNewAsset({ symbol: '', name: '', type: 'STOCK', quantity: 0, notes: '' })
-        fetchAssets()
-      } else {
-        toast.error('Failed to add asset')
-      }
-    } catch (error) {
-      console.error('Error adding asset:', error)
-      toast.error('Error adding asset')
+    if (!response.ok) {
+      const error_data = await response.json()
+      throw new Error(error_data.error || 'Failed to add asset')
     }
+
+    await fetchAssets()
+  }
+
+  const handleEditAsset = async (asset: PersonalAsset) => {
+    const response = await fetch('/api/assets/personal', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: asset.id,
+        symbol: asset.symbol,
+        name: asset.name,
+        type: asset.type,
+        quantity: asset.quantity,
+        notes: asset.notes || ''
+      }),
+    })
+
+    if (!response.ok) {
+      const error_data = await response.json()
+      throw new Error(error_data.error || 'Failed to update asset')
+    }
+
+    await fetchAssets()
+  }
+
+  const handleDeleteAsset = async (asset_id: number) => {
+    const response = await fetch(`/api/assets/personal?id=${asset_id}`, {
+      method: 'DELETE',
+    })
+
+    if (!response.ok) {
+      const error_data = await response.json()
+      throw new Error(error_data.error || 'Failed to delete asset')
+    }
+
+    await fetchAssets()
   }
 
   const getTotalValue = () => {
@@ -106,10 +120,6 @@ export default function PersonalPortfolioPage() {
       style: 'currency',
       currency: 'USD'
     }).format(amount)
-  }
-
-  const formatLastUpdated = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString()
   }
 
   if (loading) {
@@ -172,201 +182,20 @@ export default function PersonalPortfolioPage() {
               </div>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Actions</CardTitle>
-              <Plus className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Asset
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add New Asset</DialogTitle>
-                    <DialogDescription>
-                      Add a new asset to your personal portfolio
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleAddAsset} className="space-y-4">
-                    {(newAsset.type === 'STOCK' || newAsset.type === 'CRYPTO') && (
-                      <div>
-                        <Label htmlFor="symbol">Symbol</Label>
-                        <Input
-                          id="symbol"
-                          value={newAsset.symbol}
-                          onChange={(e) => setNewAsset({ ...newAsset, symbol: e.target.value.toUpperCase() })}
-                          placeholder={newAsset.type === 'STOCK' ? "e.g., FXAIX, AAPL" : "e.g., BTC, ETH"}
-                          required
-                        />
-                      </div>
-                    )}
-                    {(newAsset.type === 'STOCK' || newAsset.type === 'CRYPTO') && (
-                      <div>
-                        <Label htmlFor="name">Name</Label>
-                        <Input
-                          id="name"
-                          value={newAsset.name}
-                          onChange={(e) => setNewAsset({ ...newAsset, name: e.target.value })}
-                          placeholder={newAsset.type === 'STOCK' ? "e.g., Fidelity 500 Index Fund" : "e.g., Bitcoin"}
-                          required
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <Label htmlFor="type">Type</Label>
-                      <Select
-                        value={newAsset.type}
-                        onValueChange={(value: 'CASH' | 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER' | 'MISC') => {
-                          const updatedAsset = { ...newAsset, type: value }
-                          
-                          // Auto-populate symbol and name for precious metals and cash
-                          if (value === 'GOLD') {
-                            updatedAsset.symbol = 'GOLD'
-                            updatedAsset.name = 'Gold'
-                          } else if (value === 'SILVER') {
-                            updatedAsset.symbol = 'SILVER'
-                            updatedAsset.name = 'Silver'
-                          } else if (value === 'CASH') {
-                            updatedAsset.symbol = 'CASH'
-                            updatedAsset.name = 'Cash'
-                          } else if (value === 'MISC') {
-                            updatedAsset.symbol = 'MISC'
-                            updatedAsset.name = 'Miscellaneous'
-                          }
-                          
-                          setNewAsset(updatedAsset)
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CASH">Cash</SelectItem>
-                          <SelectItem value="STOCK">Stock</SelectItem>
-                          <SelectItem value="CRYPTO">Crypto</SelectItem>
-                          <SelectItem value="GOLD">Gold</SelectItem>
-                          <SelectItem value="SILVER">Silver</SelectItem>
-                          <SelectItem value="MISC">Miscellaneous</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="quantity">
-                        {newAsset.type === 'CASH' || newAsset.type === 'MISC' ? 'Total Value' : 'Quantity'} 
-                        {newAsset.type === 'GOLD' || newAsset.type === 'SILVER' ? ' (ounces)' : 
-                         newAsset.type === 'CASH' || newAsset.type === 'MISC' ? ' (dollars)' : ' (shares)'}
-                      </Label>
-                      <Input
-                        id="quantity"
-                        type="number"
-                        step="0.000001"
-                        value={newAsset.quantity}
-                        onChange={(e) => setNewAsset({ ...newAsset, quantity: parseFloat(e.target.value) || 0 })}
-                        placeholder={
-                          newAsset.type === 'GOLD' || newAsset.type === 'SILVER' ? "e.g., 1.5 (ounces)" :
-                          newAsset.type === 'CASH' || newAsset.type === 'MISC' ? "e.g., 5000 (total dollars)" :
-                          "e.g., 100 (shares)"
-                        }
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="notes">Notes (Optional)</Label>
-                      <Input
-                        id="notes"
-                        value={newAsset.notes}
-                        onChange={(e) => setNewAsset({ ...newAsset, notes: e.target.value })}
-                        placeholder="e.g., Bank account, Physical coins, etc."
-                      />
-                    </div>
-                    <Button type="submit" className="w-full">
-                      Add Asset
-                    </Button>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </CardContent>
-          </Card>
         </div>
 
-        {/* Assets Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Assets</CardTitle>
-            <CardDescription>Live prices updated every 10 seconds</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {assets.length === 0 ? (
-              <div className="text-center py-8">
-                <DollarSign className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No assets yet</h3>
-                <p className="text-gray-600 mb-4">Start by adding your first asset</p>
-                <Button onClick={() => setAddDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Your First Asset
-                </Button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium">Symbol</th>
-                      <th className="text-left py-3 px-4 font-medium">Name</th>
-                      <th className="text-left py-3 px-4 font-medium">Type</th>
-                      <th className="text-right py-3 px-4 font-medium">Quantity</th>
-                      <th className="text-right py-3 px-4 font-medium">Price</th>
-                      <th className="text-right py-3 px-4 font-medium">Total Value</th>
-                      <th className="text-left py-3 px-4 font-medium">Notes</th>
-                      <th className="text-right py-3 px-4 font-medium">Last Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assets.map((asset) => (
-                      <tr key={asset.id} className="border-b hover:bg-gray-50">
-                        <td className="py-3 px-4 font-mono font-medium">{asset.symbol}</td>
-                        <td className="py-3 px-4">{asset.name}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            asset.type === 'STOCK' ? 'bg-blue-100 text-blue-800' :
-                            asset.type === 'CRYPTO' ? 'bg-orange-100 text-orange-800' :
-                            asset.type === 'GOLD' ? 'bg-yellow-100 text-yellow-800' :
-                            asset.type === 'SILVER' ? 'bg-gray-100 text-gray-800' :
-                            asset.type === 'CASH' ? 'bg-green-100 text-green-800' :
-                            'bg-purple-100 text-purple-800'
-                          }`}>
-                            {asset.type}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono">{asset.quantity.toLocaleString()}</td>
-                        <td className="py-3 px-4 text-right">
-                          <div className="font-mono">{formatCurrency(asset.currentPrice)}</div>
-                          <div className="mt-1">
-                            <div className="w-full bg-gray-200 rounded-full h-1.5">
-                              <div 
-                                className="bg-green-500 h-1.5 rounded-full transition-all duration-1000 ease-linear"
-                                style={{ width: `${((10 - countdown) / 10) * 100}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right font-mono font-medium">{formatCurrency(asset.totalValue)}</td>
-                        <td className="py-3 px-4 text-sm text-gray-600">{asset.notes || '-'}</td>
-                        <td className="py-3 px-4 text-right text-sm text-gray-600">{formatLastUpdated(asset.lastUpdated)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Asset Display Component */}
+        <AssetDisplay
+          assets={assets}
+          countdown={countdown}
+          onAdd={handleAddAsset}
+          onEdit={handleEditAsset}
+          onDelete={handleDeleteAsset}
+          portfolio_type="personal"
+          empty_state_icon={<DollarSign className="h-12 w-12 text-gray-400 mx-auto" />}
+          empty_state_title="No assets yet"
+          empty_state_description="Start by adding your first asset"
+        />
       </div>
     </div>
   )
