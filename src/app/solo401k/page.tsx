@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { MainLayout } from '@/components/main-layout'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, BarChart3, TrendingUp, RefreshCw } from "lucide-react"
-import Link from "next/link"
 import { AssetDisplay } from "@/components/AssetDisplay"
+import { AssetPieChart } from '@/components/asset-pie-chart'
 
 interface Solo401kAsset {
   id: number
@@ -21,39 +21,41 @@ interface Solo401kAsset {
 export default function Solo401kPortfolioPage() {
   const [assets, setAssets] = useState<Solo401kAsset[]>([])
   const [loading, setLoading] = useState(true)
-  const [countdown, setCountdown] = useState(10)
+  const [pieChartData, setPieChartData] = useState<Array<{ name: string; value: number; type: string }>>([])
 
   useEffect(() => {
     fetchAssets()
-    // Set up auto-refresh every 10 seconds
-    const interval = setInterval(fetchAssets, 10000)
+    fetchPieChartData()
+    const interval = setInterval(() => {
+      fetchAssets()
+      fetchPieChartData()
+    }, 10000)
     return () => clearInterval(interval)
   }, [])
 
-  // Countdown timer for loading bar
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          return 10 // Reset to 10 when it reaches 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [])
+    fetchPieChartData()
+  }, [assets])
 
   const fetchAssets = async () => {
     try {
       const response = await fetch('/api/assets/solo401k')
       const data = await response.json()
       setAssets(data)
-      setCountdown(10) // Reset countdown when new data is fetched
     } catch (error) {
       console.error('Error fetching Solo 401k assets:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchPieChartData = async () => {
+    try {
+      const response = await fetch('/api/assets/aggregated?portfolio=solo401k')
+      const data = await response.json()
+      setPieChartData(data)
+    } catch (error) {
+      console.error('Error fetching pie chart data:', error)
     }
   }
 
@@ -72,6 +74,7 @@ export default function Solo401kPortfolioPage() {
     }
 
     await fetchAssets()
+    await fetchPieChartData()
   }
 
   const handleEditAsset = async (asset: Solo401kAsset) => {
@@ -96,6 +99,7 @@ export default function Solo401kPortfolioPage() {
     }
 
     await fetchAssets()
+    await fetchPieChartData()
   }
 
   const handleDeleteAsset = async (asset_id: number) => {
@@ -109,94 +113,58 @@ export default function Solo401kPortfolioPage() {
     }
 
     await fetchAssets()
-  }
-
-  const getTotalValue = () => {
-    return assets.reduce((sum, asset) => sum + asset.totalValue, 0)
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading Solo 401k assets...</p>
-        </div>
-      </div>
-    )
+    await fetchPieChartData()
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <BarChart3 className="h-8 w-8 text-green-600" />
-            Solo 401k Trust
-          </h1>
-          <p className="text-gray-600 mt-2">Track your Solo 401k retirement investments</p>
+    <MainLayout>
+      <div className="p-8 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Solo 401k Portfolio</h1>
+          <p className="text-muted-foreground mt-2">Manage your Solo 401k assets</p>
         </div>
 
-        {/* Portfolio Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AssetPieChart 
+            data={pieChartData}
+            title="Solo 401k Assets Breakdown"
+            description="Distribution of Solo 401k assets by type"
+          />
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <TrendingUp className="h-4 w-4 text-green-600" />
+            <CardHeader>
+              <CardTitle>Portfolio Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{formatCurrency(getTotalValue())}</div>
-              <p className="text-xs text-gray-600">{assets.length} assets</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Last Updated</CardTitle>
-              <RefreshCw className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
-                {countdown}s
+              <div className="text-3xl font-bold">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0,
+                }).format(assets.reduce((sum, asset) => sum + asset.totalValue, 0))}
               </div>
-              <p className="text-xs text-gray-600">Next update in {countdown} seconds</p>
-              <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-1000 ease-linear"
-                    style={{ width: `${((10 - countdown) / 10) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                {assets.length} asset{assets.length !== 1 ? 's' : ''}
+              </p>
             </CardContent>
           </Card>
         </div>
-
-        {/* Asset Display Component */}
-        <AssetDisplay
-          assets={assets}
-          countdown={countdown}
-          onAdd={handleAddAsset}
-          onEdit={handleEditAsset}
-          onDelete={handleDeleteAsset}
-          portfolio_type="solo401k"
-          empty_state_icon={<BarChart3 className="h-12 w-12 text-gray-400 mx-auto" />}
-          empty_state_title="No Solo 401k assets yet"
-          empty_state_description="Start by adding your first Solo 401k investment"
-        />
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Assets</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AssetDisplay
+              assets={assets}
+              loading={loading}
+              onAdd={handleAddAsset}
+              onEdit={handleEditAsset}
+              onDelete={handleDeleteAsset}
+              portfolioType="SOLO_401K"
+            />
+          </CardContent>
+        </Card>
       </div>
-    </div>
+    </MainLayout>
   )
 }

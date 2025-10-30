@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { MainLayout } from '@/components/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Save, ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { Calendar, Save } from "lucide-react"
 import { toast } from "sonner"
 
 interface MonthlyInput {
@@ -101,21 +101,12 @@ export default function MonthlyInputPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
-            <Calendar className="h-8 w-8 text-purple-600" />
-            Monthly Input
-          </h1>
-          <p className="text-gray-600 mt-2">Quick monthly estimates for your assets</p>
+    <MainLayout>
+      <div className="p-8 space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Monthly Input</h1>
+          <p className="text-muted-foreground mt-2">Quick monthly estimates for your assets</p>
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form */}
           <div className="lg:col-span-2">
@@ -259,33 +250,33 @@ export default function MonthlyInputPage() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Cash:</span>
+                    <span className="text-sm text-muted-foreground">Cash:</span>
                     <span className="font-medium">${formData.cash.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Stocks:</span>
+                    <span className="text-sm text-muted-foreground">Stocks:</span>
                     <span className="font-medium">${formData.stocks.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Crypto:</span>
+                    <span className="text-sm text-muted-foreground">Crypto:</span>
                     <span className="font-medium">${formData.crypto.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Gold:</span>
+                    <span className="text-sm text-muted-foreground">Gold:</span>
                     <span className="font-medium">${formData.gold.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Silver:</span>
+                    <span className="text-sm text-muted-foreground">Silver:</span>
                     <span className="font-medium">${formData.silver.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Misc:</span>
+                    <span className="text-sm text-muted-foreground">Misc:</span>
                     <span className="font-medium">${formData.misc.toLocaleString()}</span>
                   </div>
-                  <hr />
+                  <hr className="border-border" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total:</span>
-                    <span className="text-blue-600">${getTotalValue().toLocaleString()}</span>
+                    <span className="text-primary">${getTotalValue().toLocaleString()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -300,17 +291,17 @@ export default function MonthlyInputPage() {
               <CardContent>
                 <div className="space-y-3">
                   {existingData.slice(0, 5).map((entry) => (
-                    <div key={entry.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <div key={entry.id} className="flex justify-between items-center p-2 bg-muted rounded">
                       <div>
                         <div className="font-medium">{months[entry.month - 1]} {entry.year}</div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           ${(entry.cash + entry.stocks + entry.crypto + entry.gold + entry.silver + entry.misc).toLocaleString()}
                         </div>
                       </div>
                     </div>
                   ))}
                   {existingData.length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4">No entries yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No entries yet</p>
                   )}
                 </div>
               </CardContent>
@@ -318,7 +309,7 @@ export default function MonthlyInputPage() {
           </div>
         </div>
       </div>
-    </div>
+    </MainLayout>
   )
 }
 
