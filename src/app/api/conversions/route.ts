@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const conversion = await prisma.solo401kConversion.create({
       data: {
-        date,
+        date: new Date(date),
         amount: parseFloat(amount),
         notes,
         createdAt: current_date,

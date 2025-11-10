@@ -8,10 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Save } from "lucide-react"
 import { toast } from "sonner"
+import { DatePicker } from "@/components/ui/date-picker"
+import { format } from "date-fns"
 
 interface Solo401kConversion {
   id?: number
-  date: string
+  date: string | Date
   amount: number
   notes?: string
 }
@@ -22,6 +24,7 @@ export default function ConversionsPage() {
     amount: 0,
     notes: ''
   })
+  const [selected_date, setSelectedDate] = useState<Date | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [existing_data, setExistingData] = useState<Solo401kConversion[]>([])
 
@@ -32,15 +35,27 @@ export default function ConversionsPage() {
   const fetch_existing_data = async () => {
     try {
       const response = await fetch('/api/conversions')
+      if (!response.ok) {
+        console.error('Failed to fetch conversions')
+        setExistingData([])
+        return
+      }
       const data = await response.json()
-      setExistingData(data)
+      setExistingData(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching conversions:', error)
+      setExistingData([])
     }
   }
 
   const handle_submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!selected_date) {
+      toast.error('Please select a date')
+      return
+    }
+    
     setLoading(true)
 
     try {
@@ -49,7 +64,10 @@ export default function ConversionsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(form_data),
+        body: JSON.stringify({
+          ...form_data,
+          date: selected_date.toISOString()
+        }),
       })
 
       if (response.ok) {
@@ -61,6 +79,7 @@ export default function ConversionsPage() {
           amount: 0,
           notes: ''
         })
+        setSelectedDate(undefined)
       } else {
         toast.error('Failed to save conversion')
       }
@@ -93,12 +112,10 @@ export default function ConversionsPage() {
                   {/* Date */}
                   <div>
                     <Label htmlFor="date">Date</Label>
-                    <Input
-                      id="date"
-                      type="text"
-                      value={form_data.date}
-                      onChange={(e) => setFormData({ ...form_data, date: e.target.value })}
-                      placeholder="MM/DD/YY"
+                    <DatePicker
+                      date={selected_date}
+                      onDateChange={setSelectedDate}
+                      placeholder="Pick a date"
                     />
                   </div>
 
@@ -168,13 +185,16 @@ export default function ConversionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(existing_data || []).map((entry) => (
-                    <tr key={entry.id} className="border-b border-border hover:bg-muted/50">
-                      <td className="p-2">{entry.date}</td>
-                      <td className="p-2">${entry.amount.toLocaleString()}</td>
-                      <td className="p-2 text-muted-foreground">{entry.notes || '-'}</td>
-                    </tr>
-                  ))}
+                  {(existing_data || []).map((entry) => {
+                    const entry_date = entry.date instanceof Date ? entry.date : new Date(entry.date)
+                    return (
+                      <tr key={entry.id} className="border-b border-border hover:bg-muted/50">
+                        <td className="p-2">{format(entry_date, 'MM/dd/yyyy')}</td>
+                        <td className="p-2">${entry.amount.toLocaleString()}</td>
+                        <td className="p-2 text-muted-foreground">{entry.notes || '-'}</td>
+                      </tr>
+                    )
+                  })}
                   {(!existing_data || existing_data.length === 0) && (
                     <tr>
                       <td colSpan={3} className="p-4 text-center text-muted-foreground">

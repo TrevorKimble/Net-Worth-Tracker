@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const income_entry = await prisma.incomeEntry.create({
       data: {
-        date,
+        date: new Date(date),
         income_source,
         amount: parseFloat(amount),
         notes,
