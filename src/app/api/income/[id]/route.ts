@@ -3,10 +3,11 @@ import { prisma } from '@/lib/prisma'
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: id_param } = await params
+    const id = parseInt(id_param)
     const body = await request.json()
     const { date, income_source, amount, notes } = body
 
@@ -42,10 +43,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id)
+    const { id: id_param } = await params
+    const id = parseInt(id_param)
 
     await prisma.incomeEntry.delete({
       where: { id }
