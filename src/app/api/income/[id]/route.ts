@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const income_entries = await prisma.incomeEntry.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-
-    return NextResponse.json(income_entries)
-  } catch (error) {
-    console.error('Error fetching income entries:', error)
-    return NextResponse.json({ error: 'Failed to fetch income entries' }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
+    const id = parseInt(params.id)
     const body = await request.json()
     const { date, income_source, amount, notes } = body
 
@@ -31,21 +22,39 @@ export async function POST(request: NextRequest) {
     const date_obj = new Date(date)
     const formatted_date = `${String(date_obj.getMonth() + 1).padStart(2, '0')}/${String(date_obj.getDate()).padStart(2, '0')}/${String(date_obj.getFullYear()).slice(-2)}`
 
-    const income_entry = await prisma.incomeEntry.create({
+    const income_entry = await prisma.incomeEntry.update({
+      where: { id },
       data: {
         date: formatted_date,
         income_source,
         amount: parseFloat(amount),
         notes,
-        createdAt: current_date,
         updatedAt: current_date
       }
     })
 
     return NextResponse.json(income_entry)
   } catch (error) {
-    console.error('Error creating income entry:', error)
-    return NextResponse.json({ error: 'Failed to save income entry' }, { status: 500 })
+    console.error('Error updating income entry:', error)
+    return NextResponse.json({ error: 'Failed to update income entry' }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+
+    await prisma.incomeEntry.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting income entry:', error)
+    return NextResponse.json({ error: 'Failed to delete income entry' }, { status: 500 })
   }
 }
 

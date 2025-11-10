@@ -6,14 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Save } from "lucide-react"
+import { Save, Edit, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/ui/date-picker"
-import { format } from "date-fns"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface Solo401kConversion {
   id?: number
-  date: string | Date
+  date: string
   amount: number
   notes?: string
 }
@@ -27,6 +27,15 @@ export default function ConversionsPage() {
   const [selected_date, setSelectedDate] = useState<Date | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [existing_data, setExistingData] = useState<Solo401kConversion[]>([])
+  const [editing_entry, setEditingEntry] = useState<Solo401kConversion | null>(null)
+  const [edit_date, setEditDate] = useState<Date | undefined>(undefined)
+  const [edit_form_data, setEditFormData] = useState<Omit<Solo401kConversion, 'id' | 'date'>>({
+    amount: 0,
+    notes: ''
+  })
+  const [delete_entry_id, setDeleteEntryId] = useState<number | null>(null)
+  const [is_edit_dialog_open, setIsEditDialogOpen] = useState(false)
+  const [is_delete_dialog_open, setIsDeleteDialogOpen] = useState(false)
 
   useEffect(() => {
     fetch_existing_data()
@@ -86,6 +95,84 @@ export default function ConversionsPage() {
     } catch (error) {
       console.error('Error saving conversion:', error)
       toast.error('Error saving conversion')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handle_edit = (entry: Solo401kConversion) => {
+    setEditingEntry(entry)
+    // Parse MM/DD/YY format to Date object
+    const [month, day, year] = entry.date.split('/')
+    const entry_date = new Date(2000 + parseInt(year), parseInt(month) - 1, parseInt(day))
+    setEditDate(entry_date)
+    setEditFormData({
+      amount: entry.amount,
+      notes: entry.notes || ''
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const handle_update = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!editing_entry?.id || !edit_date) {
+      toast.error('Please select a date')
+      return
+    }
+    
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/conversions/${editing_entry.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...edit_form_data,
+          date: edit_date.toISOString()
+        }),
+      })
+
+      if (response.ok) {
+        toast.success('Conversion updated successfully!')
+        fetch_existing_data()
+        setIsEditDialogOpen(false)
+        setEditingEntry(null)
+        setEditDate(undefined)
+      } else {
+        toast.error('Failed to update conversion')
+      }
+    } catch (error) {
+      console.error('Error updating conversion:', error)
+      toast.error('Error updating conversion')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handle_delete = async () => {
+    if (!delete_entry_id) return
+
+    setLoading(true)
+
+    try {
+      const response = await fetch(`/api/conversions/${delete_entry_id}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Conversion deleted successfully!')
+        fetch_existing_data()
+        setIsDeleteDialogOpen(false)
+        setDeleteEntryId(null)
+      } else {
+        toast.error('Failed to delete conversion')
+      }
+    } catch (error) {
+      console.error('Error deleting conversion:', error)
+      toast.error('Error deleting conversion')
     } finally {
       setLoading(false)
     }
@@ -182,22 +269,45 @@ export default function ConversionsPage() {
                     <th className="text-left p-2 font-medium">Date</th>
                     <th className="text-left p-2 font-medium">Amount</th>
                     <th className="text-left p-2 font-medium">Notes</th>
+                    <th className="text-right p-2 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(existing_data || []).map((entry) => {
-                    const entry_date = entry.date instanceof Date ? entry.date : new Date(entry.date)
                     return (
                       <tr key={entry.id} className="border-b border-border hover:bg-muted/50">
-                        <td className="p-2">{format(entry_date, 'MM/dd/yyyy')}</td>
+                        <td className="p-2">{entry.date}</td>
                         <td className="p-2">${entry.amount.toLocaleString()}</td>
                         <td className="p-2 text-muted-foreground">{entry.notes || '-'}</td>
+                        <td className="p-2">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handle_edit(entry)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setDeleteEntryId(entry.id || null)
+                                setIsDeleteDialogOpen(true)
+                              }}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
                       </tr>
                     )
                   })}
                   {(!existing_data || existing_data.length === 0) && (
                     <tr>
-                      <td colSpan={3} className="p-4 text-center text-muted-foreground">
+                      <td colSpan={4} className="p-4 text-center text-muted-foreground">
                         No conversion entries yet
                       </td>
                     </tr>
@@ -207,6 +317,74 @@ export default function ConversionsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={is_edit_dialog_open} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Conversion</DialogTitle>
+              <DialogDescription>Update the conversion information</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handle_update} className="space-y-4">
+              <div>
+                <Label htmlFor="edit_date">Date</Label>
+                <DatePicker
+                  date={edit_date}
+                  onDateChange={setEditDate}
+                  placeholder="Pick a date"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_amount">Amount ($)</Label>
+                <Input
+                  id="edit_amount"
+                  type="number"
+                  step="0.01"
+                  value={edit_form_data.amount}
+                  onChange={(e) => setEditFormData({ ...edit_form_data, amount: parseFloat(e.target.value) || 0 })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_notes">Notes (Optional)</Label>
+                <Input
+                  id="edit_notes"
+                  value={edit_form_data.notes}
+                  onChange={(e) => setEditFormData({ ...edit_form_data, notes: e.target.value })}
+                  placeholder="Any additional notes..."
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Updating...' : 'Update'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={is_delete_dialog_open} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Conversion</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this conversion? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="destructive" onClick={handle_delete} disabled={loading}>
+                {loading ? 'Deleting...' : 'Delete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   )

@@ -1,21 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET() {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const conversions = await prisma.solo401kConversion.findMany({
-      orderBy: { createdAt: 'desc' }
-    })
-
-    return NextResponse.json(conversions)
-  } catch (error) {
-    console.error('Error fetching conversions:', error)
-    return NextResponse.json({ error: 'Failed to fetch conversions' }, { status: 500 })
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
+    const id = parseInt(params.id)
     const body = await request.json()
     const { date, amount, notes } = body
 
@@ -31,20 +22,38 @@ export async function POST(request: NextRequest) {
     const date_obj = new Date(date)
     const formatted_date = `${String(date_obj.getMonth() + 1).padStart(2, '0')}/${String(date_obj.getDate()).padStart(2, '0')}/${String(date_obj.getFullYear()).slice(-2)}`
 
-    const conversion = await prisma.solo401kConversion.create({
+    const conversion = await prisma.solo401kConversion.update({
+      where: { id },
       data: {
         date: formatted_date,
         amount: parseFloat(amount),
         notes,
-        createdAt: current_date,
         updatedAt: current_date
       }
     })
 
     return NextResponse.json(conversion)
   } catch (error) {
-    console.error('Error creating conversion:', error)
-    return NextResponse.json({ error: 'Failed to save conversion' }, { status: 500 })
+    console.error('Error updating conversion:', error)
+    return NextResponse.json({ error: 'Failed to update conversion' }, { status: 500 })
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = parseInt(params.id)
+
+    await prisma.solo401kConversion.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting conversion:', error)
+    return NextResponse.json({ error: 'Failed to delete conversion' }, { status: 500 })
   }
 }
 

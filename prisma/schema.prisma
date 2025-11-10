@@ -83,7 +83,7 @@ model ActivityLog {
 // Income tracking table
 model IncomeEntry {
   id          Int      @id @default(autoincrement())
-  date        DateTime
+  date        String   // Store as readable date string like "11/10/25"
   income_source String // LDC, Ebay, 3D2A Supplies
   amount      Float
   notes       String?
@@ -96,7 +96,7 @@ model IncomeEntry {
 // Solo 401k Conversions tracking table
 model Solo401kConversion {
   id          Int      @id @default(autoincrement())
-  date        DateTime
+  date        String   // Store as readable date string like "11/10/25"
   amount      Float
   notes       String?
   createdAt   String   // Store as readable date string like "09/13/25"
