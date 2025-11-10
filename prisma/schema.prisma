@@ -80,6 +80,31 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
+// Income tracking table
+model IncomeEntry {
+  id          Int      @id @default(autoincrement())
+  date        String   // Store as readable date string like "09/13/25"
+  income_source String // LDC, Ebay, 3D2A Supplies
+  amount      Float
+  notes       String?
+  createdAt   String   // Store as readable date string like "09/13/25"
+  updatedAt   String   // Store as readable date string like "09/13/25"
+
+  @@map("income")
+}
+
+// Solo 401k Conversions tracking table
+model Solo401kConversion {
+  id          Int      @id @default(autoincrement())
+  date        String   // Store as readable date string like "09/13/25"
+  amount      Float
+  notes       String?
+  createdAt   String   // Store as readable date string like "09/13/25"
+  updatedAt   String   // Store as readable date string like "09/13/25"
+
+  @@map("solo_401k_conversions")
+}
+
 enum AssetType {
   CASH
   STOCK
