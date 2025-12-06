@@ -44,8 +44,8 @@ export default function MonthlyInputPage() {
 
   const fetchExistingData = async () => {
     try {
-      const response = await fetch('/api/monthly-inputs')
-      const data = await response.json()
+      const { getMonthlyInputsAction } = await import('@/app/actions/monthly-inputs')
+      const data = await getMonthlyInputsAction()
       setExistingData(data)
     } catch (error) {
       console.error('Error fetching monthly inputs:', error)
@@ -57,35 +57,25 @@ export default function MonthlyInputPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/monthly-inputs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
+      const { upsertMonthlyInputAction } = await import('@/app/actions/monthly-inputs')
+      await upsertMonthlyInputAction(formData)
+      toast.success('Monthly input saved successfully!')
+      fetchExistingData()
+      // Reset form
+      setFormData({
+        month: new Date().getMonth() + 1,
+        year: new Date().getFullYear(),
+        cash: 0,
+        stocks: 0,
+        crypto: 0,
+        gold: 0,
+        silver: 0,
+        misc: 0,
+        notes: ''
       })
-
-      if (response.ok) {
-        toast.success('Monthly input saved successfully!')
-        fetchExistingData()
-        // Reset form
-        setFormData({
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
-          cash: 0,
-          stocks: 0,
-          crypto: 0,
-          gold: 0,
-          silver: 0,
-          misc: 0,
-          notes: ''
-        })
-      } else {
-        toast.error('Failed to save monthly input')
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving monthly input:', error)
-      toast.error('Error saving monthly input')
+      toast.error(error.message || 'Error saving monthly input')
     } finally {
       setLoading(false)
     }

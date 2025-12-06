@@ -47,13 +47,8 @@ export default function IncomePage() {
 
   const fetch_existing_data = async () => {
     try {
-      const response = await fetch('/api/income')
-      if (!response.ok) {
-        console.error('Failed to fetch income entries')
-        setExistingData([])
-        return
-      }
-      const data = await response.json()
+      const { getIncomeEntriesAction } = await import('@/app/actions/income')
+      const data = await getIncomeEntriesAction()
       setExistingData(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching income entries:', error)
@@ -72,34 +67,24 @@ export default function IncomePage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/income', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...form_data,
-          date: selected_date.toISOString()
-        }),
+      const { createIncomeEntryAction } = await import('@/app/actions/income')
+      await createIncomeEntryAction({
+        ...form_data,
+        date: selected_date.toISOString()
       })
-
-      if (response.ok) {
-        toast.success('Income entry saved successfully!')
-        fetch_existing_data()
-        // Reset form
-        setFormData({
-          date: '',
-          income_source: '',
-          amount: 0,
-          notes: ''
-        })
-        setSelectedDate(undefined)
-      } else {
-        toast.error('Failed to save income entry')
-      }
-    } catch (error) {
+      toast.success('Income entry saved successfully!')
+      fetch_existing_data()
+      // Reset form
+      setFormData({
+        date: '',
+        income_source: '',
+        amount: 0,
+        notes: ''
+      })
+      setSelectedDate(undefined)
+    } catch (error: any) {
       console.error('Error saving income entry:', error)
-      toast.error('Error saving income entry')
+      toast.error(error.message || 'Error saving income entry')
     } finally {
       setLoading(false)
     }
@@ -132,29 +117,20 @@ export default function IncomePage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/income/${editing_entry.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...edit_form_data,
-          date: edit_date.toISOString()
-        }),
+      const { updateIncomeEntryAction } = await import('@/app/actions/income')
+      await updateIncomeEntryAction({
+        id: editing_entry.id,
+        ...edit_form_data,
+        date: edit_date.toISOString()
       })
-
-      if (response.ok) {
-        toast.success('Income entry updated successfully!')
-        fetch_existing_data()
-        setIsEditDialogOpen(false)
-        setEditingEntry(null)
-        setEditDate(undefined)
-      } else {
-        toast.error('Failed to update income entry')
-      }
-    } catch (error) {
+      toast.success('Income entry updated successfully!')
+      fetch_existing_data()
+      setIsEditDialogOpen(false)
+      setEditingEntry(null)
+      setEditDate(undefined)
+    } catch (error: any) {
       console.error('Error updating income entry:', error)
-      toast.error('Error updating income entry')
+      toast.error(error.message || 'Error updating income entry')
     } finally {
       setLoading(false)
     }
@@ -166,21 +142,15 @@ export default function IncomePage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/income/${delete_entry_id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        toast.success('Income entry deleted successfully!')
-        fetch_existing_data()
-        setIsDeleteDialogOpen(false)
-        setDeleteEntryId(null)
-      } else {
-        toast.error('Failed to delete income entry')
-      }
-    } catch (error) {
+      const { deleteIncomeEntryAction } = await import('@/app/actions/income')
+      await deleteIncomeEntryAction(delete_entry_id)
+      toast.success('Income entry deleted successfully!')
+      fetch_existing_data()
+      setIsDeleteDialogOpen(false)
+      setDeleteEntryId(null)
+    } catch (error: any) {
       console.error('Error deleting income entry:', error)
-      toast.error('Error deleting income entry')
+      toast.error(error.message || 'Error deleting income entry')
     } finally {
       setLoading(false)
     }
