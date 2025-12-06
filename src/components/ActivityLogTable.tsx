@@ -49,27 +49,41 @@ function ValuesDropdown({ old_values, new_values }: ValuesDropdownProps) {
     }).format(amount)
   }
 
-  const formatValueDisplay = (key: string, value: unknown): string => {
-    if (value === null || value === undefined) return 'null'
-    if (key === 'currentPrice' || key === 'totalValue') {
-      return typeof value === 'number' ? formatCurrency(value) : String(value)
+  const formatValue = (value: unknown): string => {
+    if (value === null || value === undefined) return '-'
+    if (typeof value === 'number') {
+      // If it's a large number (likely currency), format as currency
+      if (value >= 1 || value <= -1) {
+        return formatCurrency(value)
+      }
+      // Otherwise just show the number
+      return value.toString()
     }
-    if (key === 'quantity' && typeof value === 'number') {
-      return value.toLocaleString()
+    if (typeof value === 'string') {
+      return value || '-'
+    }
+    if (typeof value === 'boolean') {
+      return value ? 'true' : 'false'
     }
     return String(value)
   }
 
-  const has_data = (old_values && Object.keys(old_values).length > 0) || 
-                   (new_values && Object.keys(new_values).length > 0)
-
-  if (!has_data) {
-    return <span className="text-xs text-gray-400">-</span>
+  const getEntries = (values: Record<string, unknown> | null | undefined): [string, unknown][] => {
+    if (!values) return []
+    return Object.entries(values).filter(([key]) => 
+      !['id'].includes(key.toLowerCase())
+    )
   }
 
-  const all_keys = new Set<string>()
-  if (old_values) Object.keys(old_values).forEach(k => all_keys.add(k))
-  if (new_values) Object.keys(new_values).forEach(k => all_keys.add(k))
+  const old_entries = getEntries(old_values)
+  const new_entries = getEntries(new_values)
+  const has_old = old_entries.length > 0
+  const has_new = new_entries.length > 0
+  const is_update = has_old && has_new
+
+  if (!has_old && !has_new) {
+    return <span className="text-xs text-gray-400">-</span>
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -83,36 +97,47 @@ function ValuesDropdown({ old_values, new_values }: ValuesDropdownProps) {
         <DialogHeader>
           <DialogTitle>Record Details</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          {old_values && Object.keys(old_values).length > 0 && (
+        <div className={is_update ? "grid grid-cols-2 gap-4 mt-4" : "mt-4"}>
+          {is_update ? (
+            <>
+              {has_old && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-red-700">Old Values</h4>
+                  <div className="space-y-2 text-sm bg-red-50 p-3 rounded border border-red-200">
+                    {old_entries.map(([key, value]) => (
+                      <div key={key} className="flex justify-between gap-2">
+                        <span className="text-gray-600 capitalize">{key}:</span>
+                        <span className="text-gray-600 capitalize">{formatValue(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {has_new && (
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-green-700">New Values</h4>
+                  <div className="space-y-2 text-sm bg-green-50 p-3 rounded border border-green-200">
+                    {new_entries.map(([key, value]) => (
+                      <div key={key} className="flex justify-between gap-2">
+                        <span className="text-gray-600 capitalize">{key}:</span>
+                        <span className="text-gray-600 capitalize">{formatValue(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
             <div className="space-y-2">
-              <h4 className="font-semibold text-sm text-red-700">Old Values</h4>
-              <div className="space-y-2 text-sm font-mono bg-red-50 p-3 rounded border border-red-200">
-                {Array.from(all_keys).map((key) => (
+              <h4 className="font-semibold text-sm text-gray-700">Values</h4>
+              <div className="space-y-2 text-sm bg-gray-50 p-3 rounded border border-gray-200">
+                {(has_old ? old_entries : new_entries).map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-2">
-                    <span className="text-gray-600">{key}:</span>
-                    <span className="text-right">{formatValueDisplay(key, old_values?.[key])}</span>
+                    <span className="text-gray-600 capitalize">{key}:</span>
+                    <span className="text-gray-600 capitalize">{formatValue(value)}</span>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-          {new_values && Object.keys(new_values).length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm text-green-700">New Values</h4>
-              <div className="space-y-2 text-sm font-mono bg-green-50 p-3 rounded border border-green-200">
-                {Array.from(all_keys).map((key) => (
-                  <div key={key} className="flex justify-between gap-2">
-                    <span className="text-gray-600">{key}:</span>
-                    <span className="text-right">{formatValueDisplay(key, new_values?.[key])}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {!old_values && !new_values && (
-            <div className="col-span-2 text-sm text-gray-500 text-center py-4">
-              No details available
             </div>
           )}
         </div>
@@ -127,32 +152,27 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
   const [current_page, setCurrentPage] = useState(1)
   const [total_pages, setTotalPages] = useState(1)
   const [total_count, setTotalCount] = useState(0)
-  const [page_size] = useState(50) // Items per page
+  const [page_size] = useState(20) // Items per page
   const [filter, setFilter] = useState<string>(portfolio_filter)
 
   const fetchLogs = useCallback(async (page: number) => {
     setLoading(true)
     try {
       const { getLogsPaginatedAction } = await import('@/app/actions/activity-logs')
-      const portfolio_filter = filter === 'all' ? 'all' : filter === 'PERSONAL' ? 'PERSONAL' : 'SOLO_401K'
-      const data = await getLogsPaginatedAction(page, page_size, portfolio_filter as any)
+      const portfolio_filter_value = filter === 'all' ? 'all' : filter === 'PERSONAL' ? 'PERSONAL' : 'SOLO_401K'
+      const data = await getLogsPaginatedAction(page, page_size, portfolio_filter_value as 'PERSONAL' | 'SOLO_401K' | 'all')
       
-      if (data.error) {
-        toast.error(data.error)
-        setLogs([])
-        setTotalCount(0)
-        setTotalPages(1)
-        return
-      }
-      
-      setLogs(data.logs || [])
+      setLogs((data.logs || []) as ActivityLog[])
       setTotalCount(data.total || 0)
       setTotalPages(data.total_pages || 1)
       setCurrentPage(page)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error fetching logs:', error)
-      toast.error(error.message || 'Failed to fetch logs')
+      const error_message = error instanceof Error ? error.message : 'Failed to fetch logs'
+      toast.error(error_message)
       setLogs([])
+      setTotalCount(0)
+      setTotalPages(1)
     } finally {
       setLoading(false)
     }
@@ -261,7 +281,7 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
                 </thead>
                 <tbody>
                   {logs.map((log) => (
-                    <tr key={log.id} className="border-b hover:bg-gray-50">
+                    <tr key={log.id} className="border-b hover:bg-accent/50">
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {formatDateTime(log.created_at)}
                       </td>
@@ -322,7 +342,7 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
             </div>
             
             {/* Pagination Controls */}
-            {total_pages > 1 && (
+            {total_count > page_size && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="text-sm text-gray-600">
                   Page {current_page} of {total_pages}
