@@ -152,7 +152,7 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
   const [current_page, setCurrentPage] = useState(1)
   const [total_pages, setTotalPages] = useState(1)
   const [total_count, setTotalCount] = useState(0)
-  const [page_size] = useState(20) // Items per page
+  const [page_size, setPageSize] = useState(20) // Items per page
   const [filter, setFilter] = useState<string>(portfolio_filter)
 
   const fetchLogs = useCallback(async (page: number) => {
@@ -185,6 +185,33 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
   const handlePageChange = (new_page: number) => {
     if (new_page >= 1 && new_page <= total_pages) {
       fetchLogs(new_page)
+    }
+  }
+
+  const handlePageSizeChange = async (new_page_size: string) => {
+    const size = parseInt(new_page_size, 10)
+    setPageSize(size)
+    setCurrentPage(1)
+    // Fetch first page with new page size
+    setLoading(true)
+    try {
+      const { getLogsPaginatedAction } = await import('@/app/actions/activity-logs')
+      const portfolio_filter_value = filter === 'all' ? 'all' : filter === 'PERSONAL' ? 'PERSONAL' : 'SOLO_401K'
+      const data = await getLogsPaginatedAction(1, size, portfolio_filter_value as 'PERSONAL' | 'SOLO_401K' | 'all')
+      
+      setLogs((data.logs || []) as ActivityLog[])
+      setTotalCount(data.total || 0)
+      setTotalPages(data.total_pages || 1)
+      setCurrentPage(1)
+    } catch (error) {
+      console.error('Error fetching logs:', error)
+      const error_message = error instanceof Error ? error.message : 'Failed to fetch logs'
+      toast.error(error_message)
+      setLogs([])
+      setTotalCount(0)
+      setTotalPages(1)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -342,12 +369,23 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
             </div>
             
             {/* Pagination Controls */}
-            {total_count > page_size && (
+            {total_count > 0 && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t">
                 <div className="text-sm text-gray-600">
                   Page {current_page} of {total_pages}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-2">
+                  <Select value={page_size.toString()} onValueChange={handlePageSizeChange}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10 per page</SelectItem>
+                      <SelectItem value="20">20 per page</SelectItem>
+                      <SelectItem value="50">50 per page</SelectItem>
+                      <SelectItem value="100">100 per page</SelectItem>
+                    </SelectContent>
+                  </Select>
                   <Button
                     variant="outline"
                     size="sm"
