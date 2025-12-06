@@ -188,31 +188,12 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
     }
   }
 
-  const handlePageSizeChange = async (new_page_size: string) => {
+  const handlePageSizeChange = (new_page_size: string) => {
     const size = parseInt(new_page_size, 10)
     setPageSize(size)
     setCurrentPage(1)
-    // Fetch first page with new page size
-    setLoading(true)
-    try {
-      const { getLogsPaginatedAction } = await import('@/app/actions/activity-logs')
-      const portfolio_filter_value = filter === 'all' ? 'all' : filter === 'PERSONAL' ? 'PERSONAL' : 'SOLO_401K'
-      const data = await getLogsPaginatedAction(1, size, portfolio_filter_value as 'PERSONAL' | 'SOLO_401K' | 'all')
-      
-      setLogs((data.logs || []) as ActivityLog[])
-      setTotalCount(data.total || 0)
-      setTotalPages(data.total_pages || 1)
-      setCurrentPage(1)
-    } catch (error) {
-      console.error('Error fetching logs:', error)
-      const error_message = error instanceof Error ? error.message : 'Failed to fetch logs'
-      toast.error(error_message)
-      setLogs([])
-      setTotalCount(0)
-      setTotalPages(1)
-    } finally {
-      setLoading(false)
-    }
+    // The useEffect will automatically trigger fetchLogs(1) when page_size changes
+    // because page_size is in the fetchLogs dependency array
   }
 
   const formatCurrency = (amount: number) => {
