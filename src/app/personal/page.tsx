@@ -39,8 +39,8 @@ export default function PersonalPortfolioPage() {
 
   const fetchAssets = async () => {
     try {
-      const response = await fetch('/api/assets/personal')
-      const data = await response.json()
+      const { getPersonalAssets } = await import('@/app/actions/assets')
+      const data = await getPersonalAssets()
       setAssets(data)
     } catch (error) {
       console.error('Error fetching assets:', error)
@@ -51,8 +51,8 @@ export default function PersonalPortfolioPage() {
 
   const fetchPieChartData = async () => {
     try {
-      const response = await fetch('/api/assets/aggregated?portfolio=personal')
-      const data = await response.json()
+      const { getAggregatedAssetsAction } = await import('@/app/actions/aggregated')
+      const data = await getAggregatedAssetsAction('personal')
       setPieChartData(data)
     } catch (error) {
       console.error('Error fetching pie chart data:', error)
@@ -60,60 +60,43 @@ export default function PersonalPortfolioPage() {
   }
 
   const handleAddAsset = async (asset_data: Omit<PersonalAsset, 'id' | 'currentPrice' | 'totalValue' | 'lastUpdated'>) => {
-    const response = await fetch('/api/assets/personal', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(asset_data),
-    })
-
-    if (!response.ok) {
-      const error_data = await response.json()
-      throw new Error(error_data.error || 'Failed to add asset')
+    try {
+      const { createPersonalAsset } = await import('@/app/actions/assets')
+      await createPersonalAsset(asset_data)
+      await fetchAssets()
+      await fetchPieChartData()
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to add asset')
     }
-
-    await fetchAssets()
-    await fetchPieChartData()
   }
 
   const handleEditAsset = async (asset: PersonalAsset) => {
-    const response = await fetch('/api/assets/personal', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    try {
+      const { updatePersonalAsset } = await import('@/app/actions/assets')
+      await updatePersonalAsset({
         id: asset.id,
         symbol: asset.symbol,
         name: asset.name,
         type: asset.type,
         quantity: asset.quantity,
-        notes: asset.notes || ''
-      }),
-    })
-
-    if (!response.ok) {
-      const error_data = await response.json()
-      throw new Error(error_data.error || 'Failed to update asset')
+        notes: asset.notes || null
+      })
+      await fetchAssets()
+      await fetchPieChartData()
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to update asset')
     }
-
-    await fetchAssets()
-    await fetchPieChartData()
   }
 
   const handleDeleteAsset = async (asset_id: number) => {
-    const response = await fetch(`/api/assets/personal?id=${asset_id}`, {
-      method: 'DELETE',
-    })
-
-    if (!response.ok) {
-      const error_data = await response.json()
-      throw new Error(error_data.error || 'Failed to delete asset')
+    try {
+      const { deletePersonalAsset } = await import('@/app/actions/assets')
+      await deletePersonalAsset(asset_id)
+      await fetchAssets()
+      await fetchPieChartData()
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to delete asset')
     }
-
-    await fetchAssets()
-    await fetchPieChartData()
   }
 
   return (

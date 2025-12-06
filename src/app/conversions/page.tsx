@@ -43,13 +43,8 @@ export default function ConversionsPage() {
 
   const fetch_existing_data = async () => {
     try {
-      const response = await fetch('/api/conversions')
-      if (!response.ok) {
-        console.error('Failed to fetch conversions')
-        setExistingData([])
-        return
-      }
-      const data = await response.json()
+      const { getConversionsAction } = await import('@/app/actions/conversions')
+      const data = await getConversionsAction()
       setExistingData(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching conversions:', error)
@@ -68,33 +63,23 @@ export default function ConversionsPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/conversions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...form_data,
-          date: selected_date.toISOString()
-        }),
+      const { createConversionAction } = await import('@/app/actions/conversions')
+      await createConversionAction({
+        ...form_data,
+        date: selected_date.toISOString()
       })
-
-      if (response.ok) {
-        toast.success('Conversion saved successfully!')
-        fetch_existing_data()
-        // Reset form
-        setFormData({
-          date: '',
-          amount: 0,
-          notes: ''
-        })
-        setSelectedDate(undefined)
-      } else {
-        toast.error('Failed to save conversion')
-      }
-    } catch (error) {
+      toast.success('Conversion saved successfully!')
+      fetch_existing_data()
+      // Reset form
+      setFormData({
+        date: '',
+        amount: 0,
+        notes: ''
+      })
+      setSelectedDate(undefined)
+    } catch (error: any) {
       console.error('Error saving conversion:', error)
-      toast.error('Error saving conversion')
+      toast.error(error.message || 'Error saving conversion')
     } finally {
       setLoading(false)
     }
@@ -124,29 +109,20 @@ export default function ConversionsPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/conversions/${editing_entry.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...edit_form_data,
-          date: edit_date.toISOString()
-        }),
+      const { updateConversionAction } = await import('@/app/actions/conversions')
+      await updateConversionAction({
+        id: editing_entry.id,
+        ...edit_form_data,
+        date: edit_date.toISOString()
       })
-
-      if (response.ok) {
-        toast.success('Conversion updated successfully!')
-        fetch_existing_data()
-        setIsEditDialogOpen(false)
-        setEditingEntry(null)
-        setEditDate(undefined)
-      } else {
-        toast.error('Failed to update conversion')
-      }
-    } catch (error) {
+      toast.success('Conversion updated successfully!')
+      fetch_existing_data()
+      setIsEditDialogOpen(false)
+      setEditingEntry(null)
+      setEditDate(undefined)
+    } catch (error: any) {
       console.error('Error updating conversion:', error)
-      toast.error('Error updating conversion')
+      toast.error(error.message || 'Error updating conversion')
     } finally {
       setLoading(false)
     }
@@ -158,21 +134,15 @@ export default function ConversionsPage() {
     setLoading(true)
 
     try {
-      const response = await fetch(`/api/conversions/${delete_entry_id}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        toast.success('Conversion deleted successfully!')
-        fetch_existing_data()
-        setIsDeleteDialogOpen(false)
-        setDeleteEntryId(null)
-      } else {
-        toast.error('Failed to delete conversion')
-      }
-    } catch (error) {
+      const { deleteConversionAction } = await import('@/app/actions/conversions')
+      await deleteConversionAction(delete_entry_id)
+      toast.success('Conversion deleted successfully!')
+      fetch_existing_data()
+      setIsDeleteDialogOpen(false)
+      setDeleteEntryId(null)
+    } catch (error: any) {
       console.error('Error deleting conversion:', error)
-      toast.error('Error deleting conversion')
+      toast.error(error.message || 'Error deleting conversion')
     } finally {
       setLoading(false)
     }

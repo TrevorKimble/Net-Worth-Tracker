@@ -18,8 +18,8 @@ interface MonthlyInput {
   silver: number
   misc: number
   notes?: string
-  createdAt: string
-  updatedAt: string
+  created_at: string
+  updated_at: string
 }
 
 interface AssetData {
@@ -39,13 +39,13 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const [monthlyResponse, assetResponse] = await Promise.all([
-        fetch('/api/monthly-inputs'),
-        fetch('/api/assets/aggregated'),
+      const { getMonthlyInputsAction } = await import('@/app/actions/monthly-inputs')
+      const { getAggregatedAssetsAction } = await import('@/app/actions/aggregated')
+      
+      const [monthly, assets] = await Promise.all([
+        getMonthlyInputsAction(),
+        getAggregatedAssetsAction(),
       ])
-
-      const monthly = await monthlyResponse.json()
-      const assets = await assetResponse.json()
 
       setMonthlyData(monthly)
       setAssetData(assets)

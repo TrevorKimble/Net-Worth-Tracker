@@ -133,23 +133,9 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
   const fetchLogs = useCallback(async (page: number) => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: page_size.toString()
-      })
-      
-      if (filter !== 'all') {
-        params.append('portfolio', filter)
-      }
-
-      const response = await fetch(`/api/logs?${params.toString()}`)
-      
-      if (!response.ok) {
-        const error_data = await response.json()
-        throw new Error(error_data.error || 'Failed to fetch logs')
-      }
-      
-      const data = await response.json()
+      const { getLogsPaginatedAction } = await import('@/app/actions/activity-logs')
+      const portfolio_filter = filter === 'all' ? 'all' : filter === 'PERSONAL' ? 'PERSONAL' : 'SOLO_401K'
+      const data = await getLogsPaginatedAction(page, page_size, portfolio_filter as any)
       
       if (data.error) {
         toast.error(data.error)
@@ -159,26 +145,13 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
         return
       }
       
-      if (data && typeof data === 'object' && 'logs' in data) {
-        setLogs(data.logs || [])
-        setTotalCount(data.total || 0)
-        setTotalPages(data.total_pages || 1)
-        setCurrentPage(page)
-      } else if (Array.isArray(data)) {
-        // Fallback if API returns array directly
-        setLogs(data)
-        setTotalCount(data.length)
-        setTotalPages(1)
-        setCurrentPage(1)
-      } else {
-        console.error('Unexpected response format:', data)
-        setLogs([])
-        setTotalCount(0)
-        setTotalPages(1)
-      }
-    } catch (error) {
+      setLogs(data.logs || [])
+      setTotalCount(data.total || 0)
+      setTotalPages(data.total_pages || 1)
+      setCurrentPage(page)
+    } catch (error: any) {
       console.error('Error fetching logs:', error)
-      toast.error('Failed to fetch logs')
+      toast.error(error.message || 'Failed to fetch logs')
       setLogs([])
     } finally {
       setLoading(false)
