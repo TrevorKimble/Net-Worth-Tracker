@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, Save } from "lucide-react"
+import { Save } from "lucide-react"
 import { toast } from "sonner"
 
 interface MonthlyInput {
-  id?: string
+  id?: number
   month: number
   year: number
   cash: number
@@ -20,7 +20,7 @@ interface MonthlyInput {
   gold: number
   silver: number
   misc: number
-  notes?: string
+  notes?: string | null
 }
 
 export default function MonthlyInputPage() {
@@ -73,9 +73,10 @@ export default function MonthlyInputPage() {
         misc: 0,
         notes: ''
       })
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving monthly input:', error)
-      toast.error(error.message || 'Error saving monthly input')
+      const error_message = error instanceof Error ? error.message : 'Error saving monthly input'
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
@@ -215,8 +216,8 @@ export default function MonthlyInputPage() {
                     <Label htmlFor="notes">Notes (Optional)</Label>
                     <Input
                       id="notes"
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      value={formData.notes || ''}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value || null })}
                       placeholder="Any additional notes for this month..."
                     />
                   </div>
@@ -226,6 +227,50 @@ export default function MonthlyInputPage() {
                     {loading ? 'Saving...' : 'Save Monthly Input'}
                   </Button>
                 </form>
+
+                {/* Previous Data Table */}
+                {existingData.length > 0 && (
+                  <div className="mt-8 pt-6 border-t">
+                    <h3 className="text-lg font-semibold mb-4">Previous Monthly Inputs</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2 text-sm font-medium text-muted-foreground">Month</th>
+                            <th className="text-left p-2 text-sm font-medium text-muted-foreground">Year</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Cash</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Stocks</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Crypto</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Gold</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Silver</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Misc</th>
+                            <th className="text-right p-2 text-sm font-medium text-muted-foreground">Total</th>
+                            <th className="text-left p-2 text-sm font-medium text-muted-foreground">Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {existingData.map((entry) => {
+                            const total_value = entry.cash + entry.stocks + entry.crypto + entry.gold + entry.silver + entry.misc
+                            return (
+                              <tr key={entry.id} className="border-b hover:bg-muted/50">
+                                <td className="p-2 text-sm">{months[entry.month - 1]}</td>
+                                <td className="p-2 text-sm">{entry.year}</td>
+                                <td className="p-2 text-sm text-right">${entry.cash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-right">${entry.stocks.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-right">${entry.crypto.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-right">${entry.gold.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-right">${entry.silver.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-right">${entry.misc.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-right font-medium">${total_value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                <td className="p-2 text-sm text-muted-foreground">{entry.notes || '-'}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
