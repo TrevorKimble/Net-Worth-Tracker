@@ -45,7 +45,7 @@ export default function ConversionsPage() {
     try {
       const { getConversions } = await import('@/services/conversions')
       const data = await getConversions()
-      setExistingData(Array.isArray(data) ? data : [])
+      setExistingData(data as Solo401kConversion[])
     } catch (error) {
       console.error('Error fetching conversions:', error)
       setExistingData([])
@@ -77,9 +77,10 @@ export default function ConversionsPage() {
         notes: ''
       })
       setSelectedDate(undefined)
-    } catch (error: any) {
-      console.error('Error saving conversion:', error)
-      toast.error(error.message || 'Error saving conversion')
+    } catch (error: unknown) {
+      const error_message = error instanceof Error ? error.message : 'Error saving conversion'
+      console.error('Error saving conversion:', error_message)
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
@@ -120,9 +121,10 @@ export default function ConversionsPage() {
       setIsEditDialogOpen(false)
       setEditingEntry(null)
       setEditDate(undefined)
-    } catch (error: any) {
-      console.error('Error updating conversion:', error)
-      toast.error(error.message || 'Error updating conversion')
+    } catch (error: unknown) {
+      const error_message = error instanceof Error ? error.message : 'Error updating conversion'
+      console.error('Error updating conversion:', error_message)
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
@@ -140,9 +142,10 @@ export default function ConversionsPage() {
       fetch_existing_data()
       setIsDeleteDialogOpen(false)
       setDeleteEntryId(null)
-    } catch (error: any) {
-      console.error('Error deleting conversion:', error)
-      toast.error(error.message || 'Error deleting conversion')
+    } catch (error: unknown) {
+      const error_message = error instanceof Error ? error.message : 'Error deleting conversion'
+      console.error('Error deleting conversion:', error_message)
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
