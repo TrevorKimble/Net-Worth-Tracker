@@ -126,21 +126,42 @@ export async function getLogsPaginated(
       created_at: log.created_at,
       old_values: old_values,
       new_values: new_values,
-      // For updates, show what changed
-      changes: is_update ? {
-        quantity: old_values.quantity !== new_values.quantity ? {
-          from: old_values.quantity,
-          to: new_values.quantity
-        } : null,
-        currentPrice: old_values.currentPrice !== new_values.currentPrice ? {
-          from: old_values.currentPrice,
-          to: new_values.currentPrice
-        } : null,
-        totalValue: old_values.totalValue !== new_values.totalValue ? {
-          from: old_values.totalValue,
-          to: new_values.totalValue
-        } : null
-      } : null
+      // For updates, show what changed - detect changes in any field
+      changes: is_update ? (() => {
+        const changes_obj: Record<string, { from: unknown; to: unknown }> = {}
+        
+        // Get all unique keys from both old and new values
+        const all_keys = new Set([
+          ...Object.keys(old_values || {}),
+          ...Object.keys(new_values || {})
+        ])
+        
+        // Check each key for changes (excluding id and timestamp fields)
+        all_keys.forEach(key => {
+          if (key.toLowerCase() === 'id' || 
+              key.toLowerCase() === 'createdat' || 
+              key.toLowerCase() === 'updatedat') {
+            return // Skip id and timestamp fields
+          }
+          
+          const old_val = old_values?.[key]
+          const new_val = new_values?.[key]
+          
+          // Only include fields that actually changed
+          // Handle null/undefined comparison properly
+          const old_val_normalized = old_val === null || old_val === undefined ? null : old_val
+          const new_val_normalized = new_val === null || new_val === undefined ? null : new_val
+          
+          if (old_val_normalized !== new_val_normalized) {
+            changes_obj[key] = {
+              from: old_val_normalized,
+              to: new_val_normalized
+            }
+          }
+        })
+        
+        return Object.keys(changes_obj).length > 0 ? changes_obj : null
+      })() : null
     }
   })
 

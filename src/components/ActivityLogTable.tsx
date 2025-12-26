@@ -23,11 +23,7 @@ interface ActivityLog {
   created_at: string
   old_values?: Record<string, unknown> | null
   new_values?: Record<string, unknown> | null
-  changes?: {
-    quantity?: { from: number; to: number } | null
-    currentPrice?: { from: number; to: number } | null
-    totalValue?: { from: number; to: number } | null
-  }
+  changes?: Record<string, { from: unknown; to: unknown }> | null
 }
 
 interface ActivityLogTableProps {
@@ -185,13 +181,6 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
     // because page_size is in the fetchLogs dependency array
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
-
   const formatDateTime = (dateString: string) => {
     try {
       if (dateString.includes('-') && dateString.includes(' ')) {
@@ -300,31 +289,26 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
                       <td className="py-3 px-4">{log.name || '-'}</td>
                       <td className="py-3 px-4 text-sm">
                         <div className="space-y-1">
-                          {log.changes?.quantity && (
-                            <div className="text-xs">
-                              <span className="text-gray-600">quantity:</span>{' '}
-                              <span className="text-red-600">{log.changes.quantity.from?.toLocaleString()}</span>
-                              {' → '}
-                              <span className="text-green-600 font-medium">{log.changes.quantity.to?.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {log.changes?.currentPrice && (
-                            <div className="text-xs">
-                              <span className="text-gray-600">price:</span>{' '}
-                              <span className="text-red-600">{formatCurrency(log.changes.currentPrice.from)}</span>
-                              {' → '}
-                              <span className="text-green-600 font-medium">{formatCurrency(log.changes.currentPrice.to)}</span>
-                            </div>
-                          )}
-                          {log.changes?.totalValue && (
-                            <div className="text-xs">
-                              <span className="text-gray-600">totalValue:</span>{' '}
-                              <span className="text-red-600">{formatCurrency(log.changes.totalValue.from)}</span>
-                              {' → '}
-                              <span className="text-green-600 font-medium">{formatCurrency(log.changes.totalValue.to)}</span>
-                            </div>
-                          )}
-                          {!log.changes?.quantity && !log.changes?.currentPrice && !log.changes?.totalValue && (
+                          {log.changes && Object.keys(log.changes).length > 0 ? (
+                            Object.entries(log.changes).map(([key, change]) => {
+                              const formatChangeValue = (value: unknown): string => {
+                                if (value === null || value === undefined) return '-'
+                                if (typeof value === 'number') {
+                                  return value.toLocaleString()
+                                }
+                                return String(value)
+                              }
+                              
+                              return (
+                                <div key={key} className="text-xs">
+                                  <span className="text-gray-600 capitalize">{key}:</span>{' '}
+                                  <span className="text-red-600">{formatChangeValue(change.from)}</span>
+                                  {' → '}
+                                  <span className="text-green-600 font-medium">{formatChangeValue(change.to)}</span>
+                                </div>
+                              )
+                            })
+                          ) : (
                             <span className="text-xs text-gray-400">-</span>
                           )}
                         </div>
