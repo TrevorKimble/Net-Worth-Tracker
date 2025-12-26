@@ -57,9 +57,25 @@ export default function MonthlyInputPage() {
     setLoading(true)
 
     try {
-      const { upsertMonthlyInputAction } = await import('@/app/actions/monthly-inputs')
-      await upsertMonthlyInputAction(formData)
-      toast.success('Monthly input saved successfully!')
+      const { 
+        createMonthlyInputAction, 
+        updateMonthlyInputAction, 
+        getMonthlyInputByMonthYearAction 
+      } = await import('@/app/actions/monthly-inputs')
+      
+      // Check if a record exists for this month/year
+      const existing_input = await getMonthlyInputByMonthYearAction(formData.month, formData.year)
+      
+      if (existing_input) {
+        // Update existing record
+        await updateMonthlyInputAction(formData)
+        toast.success('Monthly input updated successfully!')
+      } else {
+        // Create new record
+        await createMonthlyInputAction(formData)
+        toast.success('Monthly input saved successfully!')
+      }
+      
       fetchExistingData()
       // Reset form
       setFormData({
