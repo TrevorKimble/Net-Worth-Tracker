@@ -214,6 +214,17 @@ export default function SubscriptionsPage() {
     }
   }
 
+  // Group subscriptions by category
+  const grouped_subscriptions = categories.reduce((acc, category) => {
+    acc[category] = (existing_data || []).filter(sub => sub.category === category)
+    return acc
+  }, {} as Record<string, Subscription[]>)
+
+  // Calculate monthly total per category
+  const get_category_monthly_total = (category_subscriptions: Subscription[]): number => {
+    return category_subscriptions.reduce((total, sub) => total + get_monthly_cost(sub), 0)
+  }
+
   return (
     <MainLayout>
       <div className="p-8 space-y-6">
@@ -356,81 +367,98 @@ export default function SubscriptionsPage() {
           </div>
         </div>
 
-        {/* Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Subscriptions</CardTitle>
-            <CardDescription>All your subscriptions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-2 font-medium">Name</th>
-                    <th className="text-left p-2 font-medium">Purpose</th>
-                    <th className="text-left p-2 font-medium">Category</th>
-                    <th className="text-left p-2 font-medium">Cost</th>
-                    <th className="text-left p-2 font-medium">Frequency</th>
-                    <th className="text-left p-2 font-medium">Monthly Cost</th>
-                    <th className="text-left p-2 font-medium">Start Date</th>
-                    <th className="text-left p-2 font-medium">Notes</th>
-                    <th className="text-right p-2 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(existing_data || []).map((subscription) => {
-                    const monthly_cost = get_monthly_cost(subscription)
-                    return (
-                      <tr key={subscription.id} className="border-b border-border hover:bg-muted/50">
-                        <td className="p-2 font-medium">{subscription.name}</td>
-                        <td className="p-2">{subscription.purpose}</td>
-                        <td className="p-2">{subscription.category}</td>
-                        <td className="p-2">${subscription.cost.toLocaleString()}</td>
-                        <td className="p-2">
-                          {billing_frequencies.find(f => f.value === subscription.billing_frequency)?.label || subscription.billing_frequency}
-                        </td>
-                        <td className="p-2 font-medium text-primary">${monthly_cost.toFixed(2)}</td>
-                        <td className="p-2">{subscription.start_date}</td>
-                        <td className="p-2 text-muted-foreground">{subscription.notes || '-'}</td>
-                        <td className="p-2">
-                          <div className="flex justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handle_edit(subscription)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setDeleteSubscriptionId(subscription.id || null)
-                                setIsDeleteDialogOpen(true)
-                              }}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
+        {/* Tables grouped by Category */}
+        {categories.map((category) => {
+          const category_subscriptions = grouped_subscriptions[category] || []
+          const category_monthly_total = get_category_monthly_total(category_subscriptions)
+          
+          return (
+            <Card key={category}>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>{category}</CardTitle>
+                    <CardDescription>
+                      {category_subscriptions.length} subscription{category_subscriptions.length !== 1 ? 's' : ''}
+                    </CardDescription>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-muted-foreground">Monthly Total</div>
+                    <div className="text-2xl font-bold text-primary">
+                      ${category_monthly_total.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left p-2 font-medium">Name</th>
+                        <th className="text-left p-2 font-medium">Purpose</th>
+                        <th className="text-left p-2 font-medium">Cost</th>
+                        <th className="text-left p-2 font-medium">Frequency</th>
+                        <th className="text-left p-2 font-medium">Monthly Cost</th>
+                        <th className="text-left p-2 font-medium">Start Date</th>
+                        <th className="text-left p-2 font-medium">Notes</th>
+                        <th className="text-right p-2 font-medium">Actions</th>
                       </tr>
-                    )
-                  })}
-                  {(!existing_data || existing_data.length === 0) && (
-                    <tr>
-                      <td colSpan={9} className="p-4 text-center text-muted-foreground">
-                        No subscriptions yet
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                    </thead>
+                    <tbody>
+                      {category_subscriptions.map((subscription) => {
+                        const monthly_cost = get_monthly_cost(subscription)
+                        return (
+                          <tr key={subscription.id} className="border-b border-border hover:bg-muted/50">
+                            <td className="p-2 font-medium">{subscription.name}</td>
+                            <td className="p-2">{subscription.purpose}</td>
+                            <td className="p-2">${subscription.cost.toLocaleString()}</td>
+                            <td className="p-2">
+                              {billing_frequencies.find(f => f.value === subscription.billing_frequency)?.label || subscription.billing_frequency}
+                            </td>
+                            <td className="p-2 font-medium text-primary">${monthly_cost.toFixed(2)}</td>
+                            <td className="p-2">{subscription.start_date}</td>
+                            <td className="p-2 text-muted-foreground">{subscription.notes || '-'}</td>
+                            <td className="p-2">
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handle_edit(subscription)}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setDeleteSubscriptionId(subscription.id || null)
+                                    setIsDeleteDialogOpen(true)
+                                  }}
+                                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {category_subscriptions.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="p-4 text-center text-muted-foreground">
+                            No subscriptions in this category
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
 
         {/* Edit Dialog */}
         <Dialog open={is_edit_dialog_open} onOpenChange={setIsEditDialogOpen}>
