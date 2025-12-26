@@ -42,22 +42,11 @@ interface ValuesDropdownProps {
 function ValuesDropdown({ old_values, new_values }: ValuesDropdownProps) {
   const [open, setOpen] = useState(false)
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount)
-  }
-
   const formatValue = (value: unknown): string => {
     if (value === null || value === undefined) return '-'
     if (typeof value === 'number') {
-      // If it's a large number (likely currency), format as currency
-      if (value >= 1 || value <= -1) {
-        return formatCurrency(value)
-      }
-      // Otherwise just show the number
-      return value.toString()
+      // Format numbers with locale-aware formatting (no currency)
+      return value.toLocaleString()
     }
     if (typeof value === 'string') {
       return value || '-'
