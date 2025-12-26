@@ -5,9 +5,10 @@ import { MainLayout } from '@/components/main-layout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Save, Edit, Trash2 } from "lucide-react"
+import { Save, Edit, Trash2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -62,6 +63,7 @@ export default function SubscriptionsPage() {
     notes: ''
   })
   const [delete_subscription_id, setDeleteSubscriptionId] = useState<number | null>(null)
+  const [is_add_dialog_open, setIsAddDialogOpen] = useState(false)
   const [is_edit_dialog_open, setIsEditDialogOpen] = useState(false)
   const [is_delete_dialog_open, setIsDeleteDialogOpen] = useState(false)
   const [monthly_total, setMonthlyTotal] = useState(0)
@@ -119,6 +121,7 @@ export default function SubscriptionsPage() {
         notes: ''
       })
       setSelectedDate(undefined)
+      setIsAddDialogOpen(false)
     } catch (error) {
       console.error('Error saving subscription:', error)
       const error_message = error instanceof Error ? error.message : 'Error saving subscription'
@@ -126,6 +129,21 @@ export default function SubscriptionsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handle_add_dialog_close = () => {
+    setIsAddDialogOpen(false)
+    // Reset form when closing
+    setFormData({
+      name: '',
+      purpose: '',
+      category: 'Personal',
+      cost: 0,
+      billing_frequency: 'MONTHLY',
+      start_date: '',
+      notes: ''
+    })
+    setSelectedDate(undefined)
   }
 
   const handle_edit = (subscription: Subscription) => {
@@ -228,9 +246,17 @@ export default function SubscriptionsPage() {
   return (
     <MainLayout>
       <div className="p-8 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Subscriptions</h1>
-          <p className="text-muted-foreground mt-2">Track your recurring subscriptions</p>
+
+        {/* Header with Add Button */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Subscriptions</h1>
+            <p className="text-muted-foreground mt-2">Track your recurring subscriptions</p>
+          </div>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Subscription
+          </Button>
         </div>
 
         {/* Monthly Total Card */}
@@ -245,127 +271,6 @@ export default function SubscriptionsPage() {
             </div>
           </CardContent>
         </Card>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Form */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Add Subscription</CardTitle>
-                <CardDescription>Enter your subscription information</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handle_submit} className="space-y-6">
-                  {/* Name */}
-                  <div>
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      value={form_data.name}
-                      onChange={(e) => setFormData({ ...form_data, name: e.target.value })}
-                      placeholder="e.g., Netflix, Spotify"
-                      required
-                    />
-                  </div>
-
-                  {/* Purpose */}
-                  <div>
-                    <Label htmlFor="purpose">Purpose</Label>
-                    <Input
-                      id="purpose"
-                      value={form_data.purpose}
-                      onChange={(e) => setFormData({ ...form_data, purpose: e.target.value })}
-                      placeholder="e.g., Entertainment, Productivity"
-                      required
-                    />
-                  </div>
-
-                  {/* Category */}
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <Select
-                      value={form_data.category}
-                      onValueChange={(value) => setFormData({ ...form_data, category: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Cost */}
-                  <div>
-                    <Label htmlFor="cost">Cost ($)</Label>
-                    <Input
-                      id="cost"
-                      type="number"
-                      step="0.01"
-                      value={form_data.cost}
-                      onChange={(e) => setFormData({ ...form_data, cost: parseFloat(e.target.value) || 0 })}
-                      placeholder="0.00"
-                      required
-                    />
-                  </div>
-
-                  {/* Billing Frequency */}
-                  <div>
-                    <Label htmlFor="billing_frequency">Billing Frequency</Label>
-                    <Select
-                      value={form_data.billing_frequency}
-                      onValueChange={(value: 'MONTHLY' | 'YEARLY' | 'QUARTERLY' | 'WEEKLY' | 'BIANNUAL') => 
-                        setFormData({ ...form_data, billing_frequency: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select billing frequency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {billing_frequencies.map((freq) => (
-                          <SelectItem key={freq.value} value={freq.value}>
-                            {freq.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Start Date */}
-                  <div>
-                    <Label htmlFor="start_date">Start Date</Label>
-                    <DatePicker
-                      date={selected_date}
-                      onDateChange={setSelectedDate}
-                      placeholder="Pick a date"
-                    />
-                  </div>
-
-                  {/* Notes */}
-                  <div>
-                    <Label htmlFor="notes">Notes (Optional)</Label>
-                    <Input
-                      id="notes"
-                      value={form_data.notes}
-                      onChange={(e) => setFormData({ ...form_data, notes: e.target.value })}
-                      placeholder="Any additional notes..."
-                    />
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    <Save className="h-4 w-4 mr-2" />
-                    {loading ? 'Saving...' : 'Save Subscription'}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
 
         {/* Tables grouped by Category */}
         {categories.map((category) => {
@@ -460,107 +365,266 @@ export default function SubscriptionsPage() {
           )
         })}
 
-        {/* Edit Dialog */}
-        <Dialog open={is_edit_dialog_open} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
+        {/* Add Subscription Dialog */}
+        <Dialog open={is_add_dialog_open} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Subscription</DialogTitle>
-              <DialogDescription>Update the subscription information</DialogDescription>
+              <DialogTitle className="text-2xl">Add New Subscription</DialogTitle>
+              <DialogDescription>Enter your subscription information below</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handle_update} className="space-y-4">
-              <div>
-                <Label htmlFor="edit_name">Name</Label>
-                <Input
-                  id="edit_name"
-                  value={edit_form_data.name}
-                  onChange={(e) => setEditFormData({ ...edit_form_data, name: e.target.value })}
-                  placeholder="e.g., Netflix, Spotify"
-                  required
-                />
+            <form onSubmit={handle_submit} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="name" className="text-sm font-semibold">Name *</Label>
+                  <Input
+                    id="name"
+                    value={form_data.name}
+                    onChange={(e) => setFormData({ ...form_data, name: e.target.value })}
+                    placeholder="e.g., Netflix, Spotify"
+                    className="h-10"
+                    required
+                  />
+                </div>
+
+                {/* Purpose */}
+                <div className="space-y-2">
+                  <Label htmlFor="purpose" className="text-sm font-semibold">Purpose *</Label>
+                  <Input
+                    id="purpose"
+                    value={form_data.purpose}
+                    onChange={(e) => setFormData({ ...form_data, purpose: e.target.value })}
+                    placeholder="e.g., Entertainment, Productivity"
+                    className="h-10"
+                    required
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="edit_purpose">Purpose</Label>
-                <Input
-                  id="edit_purpose"
-                  value={edit_form_data.purpose}
-                  onChange={(e) => setEditFormData({ ...edit_form_data, purpose: e.target.value })}
-                  placeholder="e.g., Entertainment, Productivity"
-                  required
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-semibold">Category *</Label>
+                  <Select
+                    value={form_data.category}
+                    onValueChange={(value) => setFormData({ ...form_data, category: value })}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Cost */}
+                <div className="space-y-2">
+                  <Label htmlFor="cost" className="text-sm font-semibold">Cost ($) *</Label>
+                  <Input
+                    id="cost"
+                    type="number"
+                    step="0.01"
+                    value={form_data.cost || ''}
+                    onChange={(e) => setFormData({ ...form_data, cost: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                    className="h-10"
+                    required
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="edit_category">Category</Label>
-                <Select
-                  value={edit_form_data.category}
-                  onValueChange={(value) => setEditFormData({ ...edit_form_data, category: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Billing Frequency */}
+                <div className="space-y-2">
+                  <Label htmlFor="billing_frequency" className="text-sm font-semibold">Billing Frequency *</Label>
+                  <Select
+                    value={form_data.billing_frequency}
+                    onValueChange={(value: 'MONTHLY' | 'YEARLY' | 'QUARTERLY' | 'WEEKLY' | 'BIANNUAL') => 
+                      setFormData({ ...form_data, billing_frequency: value })
+                    }
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select billing frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {billing_frequencies.map((freq) => (
+                        <SelectItem key={freq.value} value={freq.value}>
+                          {freq.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Start Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="start_date" className="text-sm font-semibold">Start Date *</Label>
+                  <DatePicker
+                    date={selected_date}
+                    onDateChange={setSelectedDate}
+                    placeholder="Pick a date"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="edit_cost">Cost ($)</Label>
-                <Input
-                  id="edit_cost"
-                  type="number"
-                  step="0.01"
-                  value={edit_form_data.cost}
-                  onChange={(e) => setEditFormData({ ...edit_form_data, cost: parseFloat(e.target.value) || 0 })}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_billing_frequency">Billing Frequency</Label>
-                <Select
-                  value={edit_form_data.billing_frequency}
-                  onValueChange={(value: 'MONTHLY' | 'YEARLY' | 'QUARTERLY' | 'WEEKLY' | 'BIANNUAL') => 
-                    setEditFormData({ ...edit_form_data, billing_frequency: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select billing frequency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {billing_frequencies.map((freq) => (
-                      <SelectItem key={freq.value} value={freq.value}>
-                        {freq.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="edit_start_date">Start Date</Label>
-                <DatePicker
-                  date={edit_date}
-                  onDateChange={setEditDate}
-                  placeholder="Pick a date"
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit_notes">Notes (Optional)</Label>
-                <Input
-                  id="edit_notes"
-                  value={edit_form_data.notes}
-                  onChange={(e) => setEditFormData({ ...edit_form_data, notes: e.target.value })}
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-sm font-semibold">Notes (Optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={form_data.notes || ''}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...form_data, notes: e.target.value })}
                   placeholder="Any additional notes..."
+                  className="min-h-[100px] resize-none"
+                  rows={4}
                 />
               </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button type="button" variant="outline" onClick={handle_add_dialog_close} disabled={loading}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Updating...' : 'Update'}
+                <Button type="submit" disabled={loading} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {loading ? 'Saving...' : 'Save Subscription'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={is_edit_dialog_open} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Edit Subscription</DialogTitle>
+              <DialogDescription>Update the subscription information below</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handle_update} className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Name */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_name" className="text-sm font-semibold">Name *</Label>
+                  <Input
+                    id="edit_name"
+                    value={edit_form_data.name}
+                    onChange={(e) => setEditFormData({ ...edit_form_data, name: e.target.value })}
+                    placeholder="e.g., Netflix, Spotify"
+                    className="h-10"
+                    required
+                  />
+                </div>
+
+                {/* Purpose */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_purpose" className="text-sm font-semibold">Purpose *</Label>
+                  <Input
+                    id="edit_purpose"
+                    value={edit_form_data.purpose}
+                    onChange={(e) => setEditFormData({ ...edit_form_data, purpose: e.target.value })}
+                    placeholder="e.g., Entertainment, Productivity"
+                    className="h-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Category */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_category" className="text-sm font-semibold">Category *</Label>
+                  <Select
+                    value={edit_form_data.category}
+                    onValueChange={(value) => setEditFormData({ ...edit_form_data, category: value })}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Cost */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_cost" className="text-sm font-semibold">Cost ($) *</Label>
+                  <Input
+                    id="edit_cost"
+                    type="number"
+                    step="0.01"
+                    value={edit_form_data.cost || ''}
+                    onChange={(e) => setEditFormData({ ...edit_form_data, cost: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                    className="h-10"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Billing Frequency */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_billing_frequency" className="text-sm font-semibold">Billing Frequency *</Label>
+                  <Select
+                    value={edit_form_data.billing_frequency}
+                    onValueChange={(value: 'MONTHLY' | 'YEARLY' | 'QUARTERLY' | 'WEEKLY' | 'BIANNUAL') => 
+                      setEditFormData({ ...edit_form_data, billing_frequency: value })
+                    }
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select billing frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {billing_frequencies.map((freq) => (
+                        <SelectItem key={freq.value} value={freq.value}>
+                          {freq.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Start Date */}
+                <div className="space-y-2">
+                  <Label htmlFor="edit_start_date" className="text-sm font-semibold">Start Date *</Label>
+                  <DatePicker
+                    date={edit_date}
+                    onDateChange={setEditDate}
+                    placeholder="Pick a date"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-2">
+                <Label htmlFor="edit_notes" className="text-sm font-semibold">Notes (Optional)</Label>
+                <Textarea
+                  id="edit_notes"
+                  value={edit_form_data.notes || ''}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditFormData({ ...edit_form_data, notes: e.target.value })}
+                  placeholder="Any additional notes..."
+                  className="min-h-[100px] resize-none"
+                  rows={4}
+                />
+              </div>
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={loading}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {loading ? 'Updating...' : 'Update Subscription'}
                 </Button>
               </DialogFooter>
             </form>
