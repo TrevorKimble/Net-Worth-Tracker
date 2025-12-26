@@ -1,3 +1,5 @@
+'use server'
+
 import { createClient } from '@/lib/supabase/server'
 import { PriceService } from '@/lib/priceService'
 
@@ -189,6 +191,39 @@ export async function deleteAsset(
     console.error(`Error deleting asset from ${table_name}:`, error)
     throw new Error(`Failed to delete asset: ${error.message}`)
   }
+}
+
+// Wrapper functions for convenience
+export async function getPersonalAssets() {
+  return await getAssets('personal_assets')
+}
+
+export async function getSolo401kAssets() {
+  return await getAssets('solo_401k_assets')
+}
+
+export async function createPersonalAsset(data: CreateAssetData) {
+  return await createAsset('personal_assets', data)
+}
+
+export async function createSolo401kAsset(data: CreateAssetData) {
+  return await createAsset('solo_401k_assets', data)
+}
+
+export async function updatePersonalAsset(data: UpdateAssetData) {
+  return await updateAsset('personal_assets', data)
+}
+
+export async function updateSolo401kAsset(data: UpdateAssetData) {
+  return await updateAsset('solo_401k_assets', data)
+}
+
+export async function deletePersonalAsset(id: number) {
+  return await deleteAsset('personal_assets', id)
+}
+
+export async function deleteSolo401kAsset(id: number) {
+  return await deleteAsset('solo_401k_assets', id)
 }
 
 

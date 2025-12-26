@@ -1,3 +1,5 @@
+'use server'
+
 import { createClient } from '@/lib/supabase/server'
 
 interface AggregatedAsset {
@@ -63,6 +65,11 @@ export async function getAggregatedAssets(portfolio?: 'personal' | 'solo401k'): 
   process_assets(solo401k_assets)
 
   return Object.values(grouped_data)
+}
+
+// Wrapper function for consistency with action naming
+export async function getAggregatedAssetsAction(portfolio?: 'personal' | 'solo401k') {
+  return await getAggregatedAssets(portfolio)
 }
 
 

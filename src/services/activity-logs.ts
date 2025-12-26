@@ -1,3 +1,5 @@
+'use server'
+
 import { createClient } from '@/lib/supabase/server'
 
 interface ActivityLog {
@@ -172,6 +174,15 @@ export async function getLogsPaginated(
     total_pages,
     page_size
   }
+}
+
+// Wrapper function for consistency with action naming
+export async function getLogsPaginatedAction(
+  page: number = 1,
+  page_size: number = 50,
+  portfolio?: 'PERSONAL' | 'SOLO_401K' | 'all'
+) {
+  return await getLogsPaginated(page, page_size, portfolio)
 }
 
 

@@ -38,11 +38,11 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const { getMonthlyInputsAction } = await import('@/app/actions/monthly-inputs')
-      const { getAggregatedAssetsAction } = await import('@/app/actions/aggregated')
+      const { getMonthlyInputs } = await import('@/services/monthly-inputs')
+      const { getAggregatedAssetsAction } = await import('@/services/aggregated')
       
       const [monthly, assets] = await Promise.all([
-        getMonthlyInputsAction(),
+        getMonthlyInputs(),
         getAggregatedAssetsAction(),
       ])
 

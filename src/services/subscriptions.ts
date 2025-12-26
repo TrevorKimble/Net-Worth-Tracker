@@ -1,3 +1,5 @@
+'use server'
+
 import { createClient } from '@/lib/supabase/server'
 
 interface Subscription {
@@ -148,7 +150,7 @@ export async function deleteSubscription(id: number): Promise<void> {
   }
 }
 
-export function calculate_monthly_cost(subscriptions: Subscription[]): number {
+export async function calculate_monthly_cost(subscriptions: Subscription[]): Promise<number> {
   return subscriptions.reduce((total, sub) => {
     let monthly_cost = 0
     switch (sub.billing_frequency) {
@@ -170,5 +172,10 @@ export function calculate_monthly_cost(subscriptions: Subscription[]): number {
     }
     return total + monthly_cost
   }, 0)
+}
+
+export async function getMonthlyCost() {
+  const subscriptions = await getSubscriptions()
+  return await calculate_monthly_cost(subscriptions)
 }
 

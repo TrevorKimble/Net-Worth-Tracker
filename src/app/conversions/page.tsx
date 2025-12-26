@@ -43,8 +43,8 @@ export default function ConversionsPage() {
 
   const fetch_existing_data = async () => {
     try {
-      const { getConversionsAction } = await import('@/app/actions/conversions')
-      const data = await getConversionsAction()
+      const { getConversions } = await import('@/services/conversions')
+      const data = await getConversions()
       setExistingData(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching conversions:', error)
@@ -63,8 +63,8 @@ export default function ConversionsPage() {
     setLoading(true)
 
     try {
-      const { createConversionAction } = await import('@/app/actions/conversions')
-      await createConversionAction({
+      const { createConversion } = await import('@/services/conversions')
+      await createConversion({
         ...form_data,
         date: selected_date.toISOString()
       })
@@ -109,8 +109,8 @@ export default function ConversionsPage() {
     setLoading(true)
 
     try {
-      const { updateConversionAction } = await import('@/app/actions/conversions')
-      await updateConversionAction({
+      const { updateConversion } = await import('@/services/conversions')
+      await updateConversion({
         id: editing_entry.id,
         ...edit_form_data,
         date: edit_date.toISOString()
@@ -134,8 +134,8 @@ export default function ConversionsPage() {
     setLoading(true)
 
     try {
-      const { deleteConversionAction } = await import('@/app/actions/conversions')
-      await deleteConversionAction(delete_entry_id)
+      const { deleteConversion } = await import('@/services/conversions')
+      await deleteConversion(delete_entry_id)
       toast.success('Conversion deleted successfully!')
       fetch_existing_data()
       setIsDeleteDialogOpen(false)

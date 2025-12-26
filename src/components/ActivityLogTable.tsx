@@ -143,7 +143,7 @@ export function ActivityLogTable({ portfolio_filter = 'all' }: ActivityLogTableP
   const fetchLogs = useCallback(async (page: number) => {
     setLoading(true)
     try {
-      const { getLogsPaginatedAction } = await import('@/app/actions/activity-logs')
+      const { getLogsPaginatedAction } = await import('@/services/activity-logs')
       const portfolio_filter_value = filter === 'all' ? 'all' : filter === 'PERSONAL' ? 'PERSONAL' : 'SOLO_401K'
       const data = await getLogsPaginatedAction(page, page_size, portfolio_filter_value as 'PERSONAL' | 'SOLO_401K' | 'all')
       

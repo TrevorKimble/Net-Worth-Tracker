@@ -44,8 +44,8 @@ export default function MonthlyInputPage() {
 
   const fetchExistingData = async () => {
     try {
-      const { getMonthlyInputsAction } = await import('@/app/actions/monthly-inputs')
-      const data = await getMonthlyInputsAction()
+      const { getMonthlyInputs } = await import('@/services/monthly-inputs')
+      const data = await getMonthlyInputs()
       setExistingData(data)
     } catch (error) {
       console.error('Error fetching monthly inputs:', error)
@@ -58,21 +58,21 @@ export default function MonthlyInputPage() {
 
     try {
       const { 
-        createMonthlyInputAction, 
-        updateMonthlyInputAction, 
-        getMonthlyInputByMonthYearAction 
-      } = await import('@/app/actions/monthly-inputs')
+        createMonthlyInput, 
+        updateMonthlyInput, 
+        getMonthlyInputByMonthYear 
+      } = await import('@/services/monthly-inputs')
       
       // Check if a record exists for this month/year
-      const existing_input = await getMonthlyInputByMonthYearAction(formData.month, formData.year)
+      const existing_input = await getMonthlyInputByMonthYear(formData.month, formData.year)
       
       if (existing_input) {
         // Update existing record
-        await updateMonthlyInputAction(formData)
+        await updateMonthlyInput(formData)
         toast.success('Monthly input updated successfully!')
       } else {
         // Create new record
-        await createMonthlyInputAction(formData)
+        await createMonthlyInput(formData)
         toast.success('Monthly input saved successfully!')
       }
       

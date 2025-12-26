@@ -39,7 +39,7 @@ export default function PersonalPortfolioPage() {
 
   const fetchAssets = async () => {
     try {
-      const { getPersonalAssets } = await import('@/app/actions/assets')
+      const { getPersonalAssets } = await import('@/services/assets')
       const data = await getPersonalAssets()
       setAssets(data)
     } catch (error) {
@@ -51,7 +51,7 @@ export default function PersonalPortfolioPage() {
 
   const fetchPieChartData = async () => {
     try {
-      const { getAggregatedAssetsAction } = await import('@/app/actions/aggregated')
+      const { getAggregatedAssetsAction } = await import('@/services/aggregated')
       const data = await getAggregatedAssetsAction('personal')
       setPieChartData(data)
     } catch (error) {
@@ -61,7 +61,7 @@ export default function PersonalPortfolioPage() {
 
   const handleAddAsset = async (asset_data: Omit<PersonalAsset, 'id' | 'currentPrice' | 'totalValue' | 'lastUpdated'>) => {
     try {
-      const { createPersonalAsset } = await import('@/app/actions/assets')
+      const { createPersonalAsset } = await import('@/services/assets')
       await createPersonalAsset(asset_data)
       await fetchAssets()
       await fetchPieChartData()
@@ -72,7 +72,7 @@ export default function PersonalPortfolioPage() {
 
   const handleEditAsset = async (asset: PersonalAsset) => {
     try {
-      const { updatePersonalAsset } = await import('@/app/actions/assets')
+      const { updatePersonalAsset } = await import('@/services/assets')
       await updatePersonalAsset({
         id: asset.id,
         symbol: asset.symbol,
@@ -90,7 +90,7 @@ export default function PersonalPortfolioPage() {
 
   const handleDeleteAsset = async (asset_id: number) => {
     try {
-      const { deletePersonalAsset } = await import('@/app/actions/assets')
+      const { deletePersonalAsset } = await import('@/services/assets')
       await deletePersonalAsset(asset_id)
       await fetchAssets()
       await fetchPieChartData()

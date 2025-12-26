@@ -74,8 +74,8 @@ export default function SubscriptionsPage() {
 
   const fetch_existing_data = async () => {
     try {
-      const { getSubscriptionsAction } = await import('@/app/actions/subscriptions')
-      const data = await getSubscriptionsAction()
+      const { getSubscriptions } = await import('@/services/subscriptions')
+      const data = await getSubscriptions()
       // Convert notes from null to undefined for component compatibility
       const formatted_data = (Array.isArray(data) ? data : []).map(sub => ({
         ...sub,
@@ -83,8 +83,8 @@ export default function SubscriptionsPage() {
       }))
       setExistingData(formatted_data)
       // Calculate total after fetching data
-      const { getMonthlyCostAction } = await import('@/app/actions/subscriptions')
-      const total = await getMonthlyCostAction()
+      const { getMonthlyCost } = await import('@/services/subscriptions')
+      const total = await getMonthlyCost()
       setMonthlyTotal(total)
     } catch (error) {
       console.error('Error fetching subscriptions:', error)
@@ -103,8 +103,8 @@ export default function SubscriptionsPage() {
     setLoading(true)
 
     try {
-      const { createSubscriptionAction } = await import('@/app/actions/subscriptions')
-      await createSubscriptionAction({
+      const { createSubscription } = await import('@/services/subscriptions')
+      await createSubscription({
         ...form_data,
         start_date: selected_date.toISOString()
       })
@@ -174,8 +174,8 @@ export default function SubscriptionsPage() {
     setLoading(true)
 
     try {
-      const { updateSubscriptionAction } = await import('@/app/actions/subscriptions')
-      await updateSubscriptionAction({
+      const { updateSubscription } = await import('@/services/subscriptions')
+      await updateSubscription({
         id: editing_subscription.id,
         ...edit_form_data,
         start_date: edit_date.toISOString()
@@ -200,8 +200,8 @@ export default function SubscriptionsPage() {
     setLoading(true)
 
     try {
-      const { deleteSubscriptionAction } = await import('@/app/actions/subscriptions')
-      await deleteSubscriptionAction(delete_subscription_id)
+      const { deleteSubscription } = await import('@/services/subscriptions')
+      await deleteSubscription(delete_subscription_id)
       toast.success('Subscription deleted successfully!')
       fetch_existing_data()
       setIsDeleteDialogOpen(false)

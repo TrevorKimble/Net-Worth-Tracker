@@ -47,8 +47,8 @@ export default function IncomePage() {
 
   const fetch_existing_data = async () => {
     try {
-      const { getIncomeEntriesAction } = await import('@/app/actions/income')
-      const data = await getIncomeEntriesAction()
+      const { getIncomeEntries } = await import('@/services/income')
+      const data = await getIncomeEntries()
       setExistingData(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching income entries:', error)
@@ -67,8 +67,8 @@ export default function IncomePage() {
     setLoading(true)
 
     try {
-      const { createIncomeEntryAction } = await import('@/app/actions/income')
-      await createIncomeEntryAction({
+      const { createIncomeEntry } = await import('@/services/income')
+      await createIncomeEntry({
         ...form_data,
         date: selected_date.toISOString()
       })
@@ -117,8 +117,8 @@ export default function IncomePage() {
     setLoading(true)
 
     try {
-      const { updateIncomeEntryAction } = await import('@/app/actions/income')
-      await updateIncomeEntryAction({
+      const { updateIncomeEntry } = await import('@/services/income')
+      await updateIncomeEntry({
         id: editing_entry.id,
         ...edit_form_data,
         date: edit_date.toISOString()
@@ -142,8 +142,8 @@ export default function IncomePage() {
     setLoading(true)
 
     try {
-      const { deleteIncomeEntryAction } = await import('@/app/actions/income')
-      await deleteIncomeEntryAction(delete_entry_id)
+      const { deleteIncomeEntry } = await import('@/services/income')
+      await deleteIncomeEntry(delete_entry_id)
       toast.success('Income entry deleted successfully!')
       fetch_existing_data()
       setIsDeleteDialogOpen(false)

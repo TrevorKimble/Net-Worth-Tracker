@@ -78,8 +78,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Project Structure
 
-- `src/services/` - Database service layer (replaces API routes)
-- `src/app/actions/` - Server actions for client components
+- `src/services/` - Database service layer with Server Actions (marked with 'use server')
 - `supabase/migrations/` - Database schema migrations
 - `src/lib/supabase/` - Supabase client configuration
 

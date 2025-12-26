@@ -39,7 +39,7 @@ export default function Solo401kPortfolioPage() {
 
   const fetchAssets = async () => {
     try {
-      const { getSolo401kAssets } = await import('@/app/actions/assets')
+      const { getSolo401kAssets } = await import('@/services/assets')
       const data = await getSolo401kAssets()
       setAssets(data)
     } catch (error) {
@@ -51,7 +51,7 @@ export default function Solo401kPortfolioPage() {
 
   const fetchPieChartData = async () => {
     try {
-      const { getAggregatedAssetsAction } = await import('@/app/actions/aggregated')
+      const { getAggregatedAssetsAction } = await import('@/services/aggregated')
       const data = await getAggregatedAssetsAction('solo401k')
       setPieChartData(data)
     } catch (error) {
@@ -61,7 +61,7 @@ export default function Solo401kPortfolioPage() {
 
   const handleAddAsset = async (asset_data: Omit<Solo401kAsset, 'id' | 'currentPrice' | 'totalValue' | 'lastUpdated'>) => {
     try {
-      const { createSolo401kAsset } = await import('@/app/actions/assets')
+      const { createSolo401kAsset } = await import('@/services/assets')
       await createSolo401kAsset(asset_data)
       await fetchAssets()
       await fetchPieChartData()
@@ -72,7 +72,7 @@ export default function Solo401kPortfolioPage() {
 
   const handleEditAsset = async (asset: Solo401kAsset) => {
     try {
-      const { updateSolo401kAsset } = await import('@/app/actions/assets')
+      const { updateSolo401kAsset } = await import('@/services/assets')
       await updateSolo401kAsset({
         id: asset.id,
         symbol: asset.symbol,
@@ -90,7 +90,7 @@ export default function Solo401kPortfolioPage() {
 
   const handleDeleteAsset = async (asset_id: number) => {
     try {
-      const { deleteSolo401kAsset } = await import('@/app/actions/assets')
+      const { deleteSolo401kAsset } = await import('@/services/assets')
       await deleteSolo401kAsset(asset_id)
       await fetchAssets()
       await fetchPieChartData()
