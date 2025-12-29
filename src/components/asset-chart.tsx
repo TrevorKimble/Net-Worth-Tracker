@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from '@/components/ui/select'
 
 interface TickerOption {
   tradingview_symbol: string
@@ -79,9 +79,33 @@ export function AssetChart() {
           })
         }
 
-        const options = Array.from(ticker_map.values()).sort((a, b) =>
-          a.display_name.localeCompare(b.display_name)
-        )
+        // Group and sort options
+        const get_group_order = (asset_type: string): number => {
+          switch (asset_type) {
+            case 'STOCK':
+              return 1 // Stocks first
+            case 'CRYPTO':
+              return 2 // Crypto second
+            case 'GOLD':
+            case 'SILVER':
+              return 3 // Precious Metals third
+            default:
+              return 4 // Everything else last
+          }
+        }
+
+        const options = Array.from(ticker_map.values()).sort((a, b) => {
+          const group_a = get_group_order(a.asset_type)
+          const group_b = get_group_order(b.asset_type)
+          
+          // First sort by group
+          if (group_a !== group_b) {
+            return group_a - group_b
+          }
+          
+          // Then sort alphabetically within group
+          return a.display_name.localeCompare(b.display_name)
+        })
 
         set_ticker_options(options)
         set_loading(false)
@@ -114,11 +138,63 @@ export function AssetChart() {
                 <SelectValue placeholder="Select a ticker" />
               </SelectTrigger>
               <SelectContent>
-                {ticker_options.map((option) => (
-                  <SelectItem key={option.tradingview_symbol} value={option.tradingview_symbol}>
-                    {option.display_name}
-                  </SelectItem>
-                ))}
+                {(() => {
+                  // Group options by asset type
+                  const stocks = ticker_options.filter(opt => opt.asset_type === 'STOCK')
+                  const crypto = ticker_options.filter(opt => opt.asset_type === 'CRYPTO')
+                  const precious_metals = ticker_options.filter(opt => opt.asset_type === 'GOLD' || opt.asset_type === 'SILVER')
+                  const other = ticker_options.filter(opt => 
+                    opt.asset_type !== 'STOCK' && 
+                    opt.asset_type !== 'CRYPTO' && 
+                    opt.asset_type !== 'GOLD' && 
+                    opt.asset_type !== 'SILVER'
+                  )
+
+                  return (
+                    <>
+                      {stocks.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Stocks</SelectLabel>
+                          {stocks.map((option) => (
+                            <SelectItem key={option.tradingview_symbol} value={option.tradingview_symbol}>
+                              {option.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {crypto.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Crypto</SelectLabel>
+                          {crypto.map((option) => (
+                            <SelectItem key={option.tradingview_symbol} value={option.tradingview_symbol}>
+                              {option.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {precious_metals.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Precious Metals</SelectLabel>
+                          {precious_metals.map((option) => (
+                            <SelectItem key={option.tradingview_symbol} value={option.tradingview_symbol}>
+                              {option.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                      {other.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel>Other</SelectLabel>
+                          {other.map((option) => (
+                            <SelectItem key={option.tradingview_symbol} value={option.tradingview_symbol}>
+                              {option.display_name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                    </>
+                  )
+                })()}
               </SelectContent>
             </Select>
           )}
