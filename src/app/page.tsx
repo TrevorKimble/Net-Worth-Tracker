@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/main-layout'
 import { MonthlyInputChart } from '@/components/monthly-input-chart'
 import { AssetPieChart } from '@/components/asset-pie-chart'
+import { AssetChart } from '@/components/asset-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Wallet, Coins, Gem, CircleDollarSign } from 'lucide-react'
 
@@ -263,6 +264,9 @@ export default function Home() {
               title="Asset Breakdown (All Portfolios)"
               description="Distribution of assets by type"
             />
+          </div>
+          <div className="lg:col-span-2">
+            <AssetChart />
           </div>
         </div>
       </div>
