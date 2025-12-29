@@ -2,26 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/main-layout'
-import { MonthlyInputChart } from '@/components/monthly-input-chart'
-import { AssetPieChart } from '@/components/asset-pie-chart'
 import { AssetChart } from '@/components/asset-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Wallet, Coins, Gem, CircleDollarSign } from 'lucide-react'
-
-interface MonthlyInput {
-  id: number
-  month: number
-  year: number
-  cash: number
-  stocks: number
-  crypto: number
-  gold: number
-  silver: number
-  misc: number
-  notes?: string
-  createdAt: string
-  updatedAt: string
-}
 
 interface AssetData {
   name: string
@@ -30,7 +13,6 @@ interface AssetData {
 }
 
 export default function Home() {
-  const [monthlyData, setMonthlyData] = useState<MonthlyInput[]>([])
   const [assetData, setAssetData] = useState<AssetData[]>([])
 
   useEffect(() => {
@@ -39,30 +21,8 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      const { getMonthlyInputs } = await import('@/services/monthly-inputs')
       const { getAggregatedAssetsAction } = await import('@/services/aggregated')
-      
-      const [monthly, assets] = await Promise.all([
-        getMonthlyInputs(),
-        getAggregatedAssetsAction(),
-      ])
-
-      // Transform monthly data to match MonthlyInputChart interface
-      const transformed_monthly = monthly.map(item => ({
-        id: item.id,
-        month: item.month,
-        year: item.year,
-        cash: item.cash,
-        stocks: item.stocks,
-        crypto: item.crypto,
-        gold: item.gold,
-        silver: item.silver,
-        misc: item.misc,
-        notes: item.notes ?? undefined,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at
-      }))
-      setMonthlyData(transformed_monthly)
+      const assets = await getAggregatedAssetsAction()
       setAssetData(assets)
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -255,16 +215,6 @@ export default function Home() {
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="lg:col-span-2">
-            <MonthlyInputChart data={monthlyData} />
-          </div>
-          <div className="lg:col-span-2">
-            <AssetPieChart 
-              data={assetData} 
-              title="Asset Breakdown (All Portfolios)"
-              description="Distribution of assets by type"
-            />
-          </div>
           <div className="lg:col-span-2">
             <AssetChart />
           </div>
