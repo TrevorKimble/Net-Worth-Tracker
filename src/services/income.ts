@@ -135,5 +135,27 @@ export async function deleteIncomeEntry(id: number): Promise<void> {
   }
 }
 
+export async function getUniqueIncomeSources(): Promise<string[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('income')
+    .select('income_source')
+
+  if (error) {
+    console.error('Error fetching unique income sources:', error)
+    throw new Error(`Failed to fetch unique income sources: ${error.message}`)
+  }
+
+  // Get unique values and filter out null/empty
+  const unique_sources = Array.from(new Set(
+    (data || [])
+      .map(entry => entry.income_source)
+      .filter((source): source is string => Boolean(source && source.trim()))
+  )).sort()
+
+  return unique_sources
+}
+
 
 

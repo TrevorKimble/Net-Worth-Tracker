@@ -60,7 +60,8 @@ export function AssetDisplay({
   // Group assets by type
   const crypto_assets = assets.filter(a => a.type === 'CRYPTO')
   const stock_assets = assets.filter(a => a.type === 'STOCK')
-  const other_assets = assets.filter(a => !['CRYPTO', 'STOCK'].includes(a.type))
+  const precious_metals_assets = assets.filter(a => a.type === 'GOLD' || a.type === 'SILVER')
+  const other_assets = assets.filter(a => !['CRYPTO', 'STOCK', 'GOLD', 'SILVER'].includes(a.type))
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -379,6 +380,7 @@ export function AssetDisplay({
         <>
           {renderAssetTable(crypto_assets, 'Crypto Assets')}
           {renderAssetTable(stock_assets, 'Stock Assets')}
+          {renderAssetTable(precious_metals_assets, 'Precious Metals')}
           {renderAssetTable(other_assets, 'Other Assets')}
         </>
       )}

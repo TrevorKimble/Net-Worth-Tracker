@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/main-layout'
+import { MonthlyInputChart } from '@/components/monthly-input-chart'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,6 +22,8 @@ interface MonthlyInput {
   silver: number
   misc: number
   notes?: string | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 export default function MonthlyInputPage() {
@@ -37,6 +40,7 @@ export default function MonthlyInputPage() {
   })
   const [loading, setLoading] = useState(false)
   const [existingData, setExistingData] = useState<MonthlyInput[]>([])
+  const [chartData, setChartData] = useState<MonthlyInput[]>([])
 
   useEffect(() => {
     fetchExistingData()
@@ -46,7 +50,38 @@ export default function MonthlyInputPage() {
     try {
       const { getMonthlyInputs } = await import('@/services/monthly-inputs')
       const data = await getMonthlyInputs()
-      setExistingData(data)
+      
+      // Transform for existingData (table display)
+      const transformed_existing = data.map(item => ({
+        id: item.id,
+        month: item.month,
+        year: item.year,
+        cash: item.cash,
+        stocks: item.stocks,
+        crypto: item.crypto,
+        gold: item.gold,
+        silver: item.silver,
+        misc: item.misc,
+        notes: item.notes
+      }))
+      setExistingData(transformed_existing)
+      
+      // Transform data for chart component
+      const transformed_chart = data.map(item => ({
+        id: item.id,
+        month: item.month,
+        year: item.year,
+        cash: item.cash,
+        stocks: item.stocks,
+        crypto: item.crypto,
+        gold: item.gold,
+        silver: item.silver,
+        misc: item.misc,
+        notes: item.notes ?? undefined,
+        createdAt: item.created_at,
+        updatedAt: item.updated_at
+      }))
+      setChartData(transformed_chart)
     } catch (error) {
       console.error('Error fetching monthly inputs:', error)
     }
@@ -114,6 +149,14 @@ export default function MonthlyInputPage() {
           <h1 className="text-3xl font-bold text-foreground">Monthly Input</h1>
           <p className="text-muted-foreground mt-2">Quick monthly estimates for your assets</p>
         </div>
+        
+        {/* Monthly Input Chart */}
+        {chartData.length > 0 && (
+          <div className="mb-6">
+            <MonthlyInputChart data={chartData} />
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Form */}
           <div className="lg:col-span-2">

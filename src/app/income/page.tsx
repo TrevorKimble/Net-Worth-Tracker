@@ -6,11 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Save, Edit, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TextAutocomplete } from "@/components/ui/text-autocomplete"
 
 interface IncomeEntry {
   id?: number
@@ -40,16 +40,34 @@ export default function IncomePage() {
   const [delete_entry_id, setDeleteEntryId] = useState<number | null>(null)
   const [is_edit_dialog_open, setIsEditDialogOpen] = useState(false)
   const [is_delete_dialog_open, setIsDeleteDialogOpen] = useState(false)
+  const [unique_income_sources, setUniqueIncomeSources] = useState<string[]>([])
 
   useEffect(() => {
     fetch_existing_data()
+    fetch_unique_income_sources()
   }, [])
+
+  const fetch_unique_income_sources = async () => {
+    try {
+      const { getUniqueIncomeSources } = await import('@/services/income')
+      const sources = await getUniqueIncomeSources()
+      setUniqueIncomeSources(sources)
+    } catch (error) {
+      console.error('Error fetching unique income sources:', error)
+      setUniqueIncomeSources([])
+    }
+  }
 
   const fetch_existing_data = async () => {
     try {
       const { getIncomeEntries } = await import('@/services/income')
       const data = await getIncomeEntries()
-      setExistingData(Array.isArray(data) ? data : [])
+      // Convert null notes to undefined for component compatibility
+      const formatted_data = (Array.isArray(data) ? data : []).map(entry => ({
+        ...entry,
+        notes: entry.notes ?? undefined
+      }))
+      setExistingData(formatted_data)
     } catch (error) {
       console.error('Error fetching income entries:', error)
       setExistingData([])
@@ -74,6 +92,7 @@ export default function IncomePage() {
       })
       toast.success('Income entry saved successfully!')
       fetch_existing_data()
+      fetch_unique_income_sources()
       // Reset form
       setFormData({
         date: '',
@@ -82,15 +101,14 @@ export default function IncomePage() {
         notes: ''
       })
       setSelectedDate(undefined)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving income entry:', error)
-      toast.error(error.message || 'Error saving income entry')
+      const error_message = error instanceof Error ? error.message : 'Error saving income entry'
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
   }
-
-  const income_sources = ['LDC', 'Ebay', '3D2A Supplies']
 
   const handle_edit = (entry: IncomeEntry) => {
     setEditingEntry(entry)
@@ -125,12 +143,14 @@ export default function IncomePage() {
       })
       toast.success('Income entry updated successfully!')
       fetch_existing_data()
+      fetch_unique_income_sources()
       setIsEditDialogOpen(false)
       setEditingEntry(null)
       setEditDate(undefined)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating income entry:', error)
-      toast.error(error.message || 'Error updating income entry')
+      const error_message = error instanceof Error ? error.message : 'Error updating income entry'
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
@@ -146,11 +166,13 @@ export default function IncomePage() {
       await deleteIncomeEntry(delete_entry_id)
       toast.success('Income entry deleted successfully!')
       fetch_existing_data()
+      fetch_unique_income_sources()
       setIsDeleteDialogOpen(false)
       setDeleteEntryId(null)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting income entry:', error)
-      toast.error(error.message || 'Error deleting income entry')
+      const error_message = error instanceof Error ? error.message : 'Error deleting income entry'
+      toast.error(error_message)
     } finally {
       setLoading(false)
     }
@@ -187,21 +209,13 @@ export default function IncomePage() {
                   {/* Income Source */}
                   <div>
                     <Label htmlFor="income_source">Income Source</Label>
-                    <Select
+                    <TextAutocomplete
+                      id="income_source"
                       value={form_data.income_source}
-                      onValueChange={(value) => setFormData({ ...form_data, income_source: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select income source" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {income_sources.map((source) => (
-                          <SelectItem key={source} value={source}>
-                            {source}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => setFormData({ ...form_data, income_source: value })}
+                      options={unique_income_sources}
+                      placeholder="Enter or select income source"
+                    />
                   </div>
 
                   {/* Amount */}
@@ -336,21 +350,13 @@ export default function IncomePage() {
               </div>
               <div>
                 <Label htmlFor="edit_income_source">Income Source</Label>
-                <Select
+                <TextAutocomplete
+                  id="edit_income_source"
                   value={edit_form_data.income_source}
-                  onValueChange={(value) => setEditFormData({ ...edit_form_data, income_source: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select income source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {income_sources.map((source) => (
-                      <SelectItem key={source} value={source}>
-                        {source}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(value) => setEditFormData({ ...edit_form_data, income_source: value })}
+                  options={unique_income_sources}
+                  placeholder="Enter or select income source"
+                />
               </div>
               <div>
                 <Label htmlFor="edit_amount">Amount ($)</Label>

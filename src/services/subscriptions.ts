@@ -179,3 +179,25 @@ export async function getMonthlyCost() {
   return await calculate_monthly_cost(subscriptions)
 }
 
+export async function getUniqueCategories(): Promise<string[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('category')
+
+  if (error) {
+    console.error('Error fetching unique categories:', error)
+    throw new Error(`Failed to fetch unique categories: ${error.message}`)
+  }
+
+  // Get unique values and filter out null/empty
+  const unique_categories = Array.from(new Set(
+    (data || [])
+      .map(sub => sub.category)
+      .filter((category): category is string => Boolean(category && category.trim()))
+  )).sort()
+
+  return unique_categories
+}
+

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/main-layout'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AssetDisplay } from "@/components/AssetDisplay"
-import { AssetPieChart } from '@/components/asset-pie-chart'
+import { TrendingUp, Wallet, Coins, Gem, CircleDollarSign } from 'lucide-react'
 
 interface Solo401kAsset {
   id: number
@@ -20,42 +20,44 @@ interface Solo401kAsset {
 
 export default function Solo401kPortfolioPage() {
   const [assets, setAssets] = useState<Solo401kAsset[]>([])
-  const [loading, setLoading] = useState(true)
-  const [pieChartData, setPieChartData] = useState<Array<{ name: string; value: number; type: string }>>([])
+  const [aggregated_data, setAggregatedData] = useState<Array<{ name: string; value: number; type: string }>>([])
 
   useEffect(() => {
     fetchAssets()
-    fetchPieChartData()
+    fetchAggregatedData()
     const interval = setInterval(() => {
       fetchAssets()
-      fetchPieChartData()
+      fetchAggregatedData()
     }, 10000)
     return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
-    fetchPieChartData()
+    fetchAggregatedData()
   }, [assets])
 
   const fetchAssets = async () => {
     try {
       const { getSolo401kAssets } = await import('@/services/assets')
       const data = await getSolo401kAssets()
-      setAssets(data)
+      // Convert null notes to undefined for component compatibility
+      const formatted_data = data.map(asset => ({
+        ...asset,
+        notes: asset.notes ?? undefined
+      }))
+      setAssets(formatted_data)
     } catch (error) {
       console.error('Error fetching Solo 401k assets:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
-  const fetchPieChartData = async () => {
+  const fetchAggregatedData = async () => {
     try {
       const { getAggregatedAssetsAction } = await import('@/services/aggregated')
       const data = await getAggregatedAssetsAction('solo401k')
-      setPieChartData(data)
+      setAggregatedData(data)
     } catch (error) {
-      console.error('Error fetching pie chart data:', error)
+      console.error('Error fetching aggregated data:', error)
     }
   }
 
@@ -64,9 +66,10 @@ export default function Solo401kPortfolioPage() {
       const { createSolo401kAsset } = await import('@/services/assets')
       await createSolo401kAsset(asset_data)
       await fetchAssets()
-      await fetchPieChartData()
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to add asset')
+      await fetchAggregatedData()
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : 'Failed to add asset'
+      throw new Error(error_message)
     }
   }
 
@@ -82,9 +85,10 @@ export default function Solo401kPortfolioPage() {
         notes: asset.notes || null
       })
       await fetchAssets()
-      await fetchPieChartData()
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update asset')
+      await fetchAggregatedData()
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : 'Failed to update asset'
+      throw new Error(error_message)
     }
   }
 
@@ -93,10 +97,29 @@ export default function Solo401kPortfolioPage() {
       const { deleteSolo401kAsset } = await import('@/services/assets')
       await deleteSolo401kAsset(asset_id)
       await fetchAssets()
-      await fetchPieChartData()
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete asset')
+      await fetchAggregatedData()
+    } catch (error) {
+      const error_message = error instanceof Error ? error.message : 'Failed to delete asset'
+      throw new Error(error_message)
     }
+  }
+
+  const total_value = assets.reduce((sum, asset) => sum + asset.totalValue, 0)
+
+  // Get value for a specific category, defaulting to 0 if not found
+  const get_category_value = (category_name: string): number => {
+    const category = aggregated_data.find(asset => asset.name === category_name)
+    return category ? category.value : 0
+  }
+
+  // Get combined value for Gold and Silver
+  const get_precious_metals_value = (): number => {
+    return get_category_value('Gold') + get_category_value('Silver')
+  }
+
+  // Calculate percentage of total for each category
+  const get_percentage = (value: number): number => {
+    return total_value > 0 ? (value / total_value) * 100 : 0
   }
 
   return (
@@ -107,27 +130,158 @@ export default function Solo401kPortfolioPage() {
           <p className="text-muted-foreground mt-2">Manage your Solo 401k assets</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <AssetPieChart 
-            data={pieChartData}
-            title="Solo 401k Assets Breakdown"
-            description="Distribution of Solo 401k assets by type"
-          />
-          <Card>
-            <CardHeader>
-              <CardTitle>Portfolio Total</CardTitle>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card className="relative overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background hover:border-primary/40 transition-all duration-300 hover:shadow-xl group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="text-center pb-3 pt-5 relative z-10">
+              <div className="flex justify-center mb-2">
+                <div className="p-2 rounded-full bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Total Value
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
+            <CardContent className="text-center pb-5 pt-0 relative z-10">
+              <div className="text-2xl font-bold tracking-tight text-foreground">
                 {new Intl.NumberFormat('en-US', {
                   style: 'currency',
                   currency: 'USD',
                   maximumFractionDigits: 0,
-                }).format(assets.reduce((sum, asset) => sum + asset.totalValue, 0))}
+                }).format(total_value)}
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
-                {assets.length} asset{assets.length !== 1 ? 's' : ''}
-              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-2 border-green-500/20 bg-gradient-to-br from-green-500/5 via-background to-background hover:border-green-500/40 transition-all duration-300 hover:shadow-xl group">
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="text-center pb-3 pt-5 relative z-10">
+              <div className="flex justify-center mb-2">
+                <div className="p-2 rounded-full bg-green-500/10 group-hover:bg-green-500/20 transition-colors">
+                  <Wallet className="h-5 w-5 text-green-500" />
+                </div>
+              </div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Cash
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center pb-5 pt-0 relative z-10">
+              <div className="text-2xl font-bold tracking-tight text-foreground">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0,
+                }).format(get_category_value('Cash'))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">
+                {get_percentage(get_category_value('Cash')).toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-2 border-blue-500/20 bg-gradient-to-br from-blue-500/5 via-background to-background hover:border-blue-500/40 transition-all duration-300 hover:shadow-xl group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="text-center pb-3 pt-5 relative z-10">
+              <div className="flex justify-center mb-2">
+                <div className="p-2 rounded-full bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors">
+                  <TrendingUp className="h-5 w-5 text-blue-500" />
+                </div>
+              </div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Stocks
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center pb-5 pt-0 relative z-10">
+              <div className="text-2xl font-bold tracking-tight text-foreground">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0,
+                }).format(get_category_value('Stocks'))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">
+                {get_percentage(get_category_value('Stocks')).toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-2 border-orange-500/20 bg-gradient-to-br from-orange-500/5 via-background to-background hover:border-orange-500/40 transition-all duration-300 hover:shadow-xl group">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="text-center pb-3 pt-5 relative z-10">
+              <div className="flex justify-center mb-2">
+                <div className="p-2 rounded-full bg-orange-500/10 group-hover:bg-orange-500/20 transition-colors">
+                  <Coins className="h-5 w-5 text-orange-500" />
+                </div>
+              </div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Crypto
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center pb-5 pt-0 relative z-10">
+              <div className="text-2xl font-bold tracking-tight text-foreground">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0,
+                }).format(get_category_value('Crypto'))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">
+                {get_percentage(get_category_value('Crypto')).toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-2 border-yellow-500/20 bg-gradient-to-br from-yellow-500/5 via-background to-background hover:border-yellow-500/40 transition-all duration-300 hover:shadow-xl group">
+            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="text-center pb-3 pt-5 relative z-10">
+              <div className="flex justify-center mb-2">
+                <div className="p-2 rounded-full bg-yellow-500/10 group-hover:bg-yellow-500/20 transition-colors">
+                  <Gem className="h-5 w-5 text-yellow-500" />
+                </div>
+              </div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Gold + Silver
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center pb-5 pt-0 relative z-10">
+              <div className="text-2xl font-bold tracking-tight text-foreground">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0,
+                }).format(get_precious_metals_value())}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">
+                {get_percentage(get_precious_metals_value()).toFixed(1)}%
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="relative overflow-hidden border-2 border-purple-500/20 bg-gradient-to-br from-purple-500/5 via-background to-background hover:border-purple-500/40 transition-all duration-300 hover:shadow-xl group">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <CardHeader className="text-center pb-3 pt-5 relative z-10">
+              <div className="flex justify-center mb-2">
+                <div className="p-2 rounded-full bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                  <CircleDollarSign className="h-5 w-5 text-purple-500" />
+                </div>
+              </div>
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Misc
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="text-center pb-5 pt-0 relative z-10">
+              <div className="text-2xl font-bold tracking-tight text-foreground">
+                {new Intl.NumberFormat('en-US', {
+                  style: 'currency',
+                  currency: 'USD',
+                  maximumFractionDigits: 0,
+                }).format(get_category_value('Misc'))}
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">
+                {get_percentage(get_category_value('Misc')).toFixed(1)}%
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -139,11 +293,11 @@ export default function Solo401kPortfolioPage() {
           <CardContent>
             <AssetDisplay
               assets={assets}
-              loading={loading}
+              countdown={0}
               onAdd={handleAddAsset}
               onEdit={handleEditAsset}
               onDelete={handleDeleteAsset}
-              portfolioType="SOLO_401K"
+              portfolio_type="solo401k"
             />
           </CardContent>
         </Card>

@@ -33,7 +33,7 @@ export async function getActivityLogs(filters?: ActivityLogFilters): Promise<Act
   let query = supabase
     .from('activity_logs')
     .select('*')
-    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
 
   if (filters?.table_name) {
     query = query.eq('table_name', filters.table_name)
@@ -89,7 +89,7 @@ export async function getLogsPaginated(
   const skip = (page - 1) * page_size
 
   const { data, error, count } = await query
-    .order('created_at', { ascending: false })
+    .order('id', { ascending: false })
     .range(skip, skip + page_size - 1)
 
   if (error) {
