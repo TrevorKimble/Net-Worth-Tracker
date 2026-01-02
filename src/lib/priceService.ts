@@ -1,6 +1,6 @@
-import axios from 'axios'
+import yahooFinance from 'yahoo-finance2'
 
-// Real price service using Yahoo Finance API
+// Price service using yahoo-finance2 package
 export class PriceService {
   private static instance: PriceService
   private priceCache: Map<string, { price: number; timestamp: number }> = new Map()
@@ -13,33 +13,6 @@ export class PriceService {
     return PriceService.instance
   }
 
-  private async fetchYahooPrice(symbol: string): Promise<number> {
-    try {
-      // Yahoo Finance API endpoint
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
-      const response = await axios.get(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      })
-
-      const data = response.data
-      if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
-        return data.chart.result[0].meta.regularMarketPrice
-      }
-      
-      // Fallback to previous close if regular market price not available
-      if (data.chart?.result?.[0]?.meta?.previousClose) {
-        return data.chart.result[0].meta.previousClose
-      }
-
-      throw new Error('No price data available')
-    } catch (error) {
-      console.error(`Error fetching Yahoo price for ${symbol}:`, error)
-      throw error
-    }
-  }
-
   async getStockPrice(symbol: string): Promise<number> {
     const cacheKey = `stock_${symbol}`
     const cached = this.priceCache.get(cacheKey)
@@ -49,13 +22,28 @@ export class PriceService {
     }
 
     try {
-      const price = await this.fetchYahooPrice(symbol)
-      this.priceCache.set(cacheKey, { price, timestamp: Date.now() })
-      return price
+      const quote_result = await yahooFinance.quote(symbol)
+      // yahoo-finance2 quote returns an object directly (not an array)
+      const quote = quote_result
+      
+      // Use regularMarketPrice as primary, fallback to regularMarketPreviousClose
+      const price = quote?.regularMarketPrice ?? quote?.regularMarketPreviousClose
+      
+      if (price === undefined || price === null) {
+        throw new Error(`No price data available for ${symbol}`)
+      }
+
+      const final_price = typeof price === 'number' ? price : parseFloat(String(price))
+      
+      if (isNaN(final_price) || final_price <= 0) {
+        throw new Error(`Invalid price data for ${symbol}: ${price}`)
+      }
+
+      this.priceCache.set(cacheKey, { price: final_price, timestamp: Date.now() })
+      return final_price
     } catch (error) {
       console.error(`Error fetching stock price for ${symbol}:`, error)
-      // Fallback to mock price if API fails
-      return this.getMockStockPrice(symbol)
+      throw error
     }
   }
 
@@ -70,13 +58,29 @@ export class PriceService {
     try {
       // For crypto, we need to add -USD suffix for Yahoo Finance
       const yahooSymbol = symbol.includes('-') ? symbol : `${symbol}-USD`
-      const price = await this.fetchYahooPrice(yahooSymbol)
-      this.priceCache.set(cacheKey, { price, timestamp: Date.now() })
-      return price
+      const quote_result = await yahooFinance.quote(yahooSymbol)
+      
+      // yahoo-finance2 quote returns an object directly (not an array)
+      const quote = quote_result
+      
+      // Use regularMarketPrice as primary, fallback to regularMarketPreviousClose
+      const price = quote?.regularMarketPrice ?? quote?.regularMarketPreviousClose
+      
+      if (price === undefined || price === null) {
+        throw new Error(`No price data available for ${yahooSymbol}`)
+      }
+
+      const final_price = typeof price === 'number' ? price : parseFloat(String(price))
+      
+      if (isNaN(final_price) || final_price <= 0) {
+        throw new Error(`Invalid price data for ${yahooSymbol}: ${price}`)
+      }
+
+      this.priceCache.set(cacheKey, { price: final_price, timestamp: Date.now() })
+      return final_price
     } catch (error) {
       console.error(`Error fetching crypto price for ${symbol}:`, error)
-      // Fallback to mock price if API fails
-      return this.getMockCryptoPrice(symbol)
+      throw error
     }
   }
 
@@ -95,53 +99,30 @@ export class PriceService {
         'SILVER': 'SI=F' // Silver futures
       }
       
-      const price = await this.fetchYahooPrice(symbols[metal])
-      this.priceCache.set(cacheKey, { price, timestamp: Date.now() })
-      return price
+      const quote_result = await yahooFinance.quote(symbols[metal])
+      
+      // yahoo-finance2 quote returns an object directly (not an array)
+      const quote = quote_result
+      
+      // Use regularMarketPrice as primary, fallback to regularMarketPreviousClose
+      const price = quote?.regularMarketPrice ?? quote?.regularMarketPreviousClose
+      
+      if (price === undefined || price === null) {
+        throw new Error(`No price data available for ${symbols[metal]}`)
+      }
+
+      const final_price = typeof price === 'number' ? price : parseFloat(String(price))
+      
+      if (isNaN(final_price) || final_price <= 0) {
+        throw new Error(`Invalid price data for ${symbols[metal]}: ${price}`)
+      }
+
+      this.priceCache.set(cacheKey, { price: final_price, timestamp: Date.now() })
+      return final_price
     } catch (error) {
       console.error(`Error fetching ${metal} price:`, error)
-      // Fallback to mock price if API fails
-      return this.getMockMetalPrice(metal)
+      throw error
     }
-  }
-
-  // Fallback mock prices when API fails
-  private getMockStockPrice(symbol: string): number {
-    const mockPrices: Record<string, number> = {
-      'FXAIX': 150.25,
-      'AAPL': 175.50,
-      'MSFT': 380.75,
-      'GOOGL': 140.20,
-      'TSLA': 250.80,
-      'SPY': 450.30,
-      'QQQ': 380.45,
-      'VTI': 220.15,
-      'VOO': 420.60,
-      'BRK.B': 350.90
-    }
-    return mockPrices[symbol] || Math.random() * 100 + 50
-  }
-
-  private getMockCryptoPrice(symbol: string): number {
-    const mockPrices: Record<string, number> = {
-      'BTC': 45000.00,
-      'ETH': 2800.50,
-      'ADA': 0.45,
-      'DOT': 6.80,
-      'LINK': 14.25,
-      'UNI': 6.50,
-      'AAVE': 95.30,
-      'SOL': 95.75
-    }
-    return mockPrices[symbol] || Math.random() * 1000 + 100
-  }
-
-  private getMockMetalPrice(metal: 'GOLD' | 'SILVER'): number {
-    const mockPrices = {
-      'GOLD': 2000.00,
-      'SILVER': 25.50
-    }
-    return mockPrices[metal]
   }
 
   async getPrice(symbol: string, type: 'STOCK' | 'CRYPTO' | 'GOLD' | 'SILVER'): Promise<number> {
@@ -157,5 +138,24 @@ export class PriceService {
       default:
         return 0
     }
+  }
+
+  async getStockHistory(
+    symbol: string, 
+    startDate: Date, 
+    endDate: Date
+  ): Promise<Array<{date: Date, price: number}>> {
+    // TODO: Implement historical stock data
+    throw new Error('Historical stock data not yet implemented')
+  }
+
+  async getCryptoMetalHistory(
+    symbol: string,
+    type: 'CRYPTO' | 'GOLD' | 'SILVER',
+    startDate: Date,
+    endDate: Date
+  ): Promise<Array<{date: Date, price: number}>> {
+    // TODO: Implement using yahoo-finance2 historical data
+    throw new Error('Historical crypto/metal data not yet implemented')
   }
 }

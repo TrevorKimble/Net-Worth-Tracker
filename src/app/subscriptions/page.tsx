@@ -12,6 +12,7 @@ import { Save, Edit, Trash2, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { TextAutocomplete } from "@/components/ui/text-autocomplete"
 
 interface Subscription {
   id?: number
@@ -32,18 +33,11 @@ const billing_frequencies = [
   { value: 'WEEKLY', label: 'Weekly' }
 ]
 
-const categories = [
-  'Personal',
-  'TrevorK Software Solutions',
-  '3D2A Supplies',
-  'Based Industries'
-]
-
 export default function SubscriptionsPage() {
   const [form_data, setFormData] = useState<Subscription>({
     name: '',
     purpose: '',
-    category: 'Personal',
+    category: '',
     cost: 0,
     billing_frequency: 'MONTHLY',
     start_date: '',
@@ -57,7 +51,7 @@ export default function SubscriptionsPage() {
   const [edit_form_data, setEditFormData] = useState<Omit<Subscription, 'id' | 'start_date'>>({
     name: '',
     purpose: '',
-    category: 'Personal',
+    category: '',
     cost: 0,
     billing_frequency: 'MONTHLY' as const,
     notes: ''
@@ -67,10 +61,23 @@ export default function SubscriptionsPage() {
   const [is_edit_dialog_open, setIsEditDialogOpen] = useState(false)
   const [is_delete_dialog_open, setIsDeleteDialogOpen] = useState(false)
   const [monthly_total, setMonthlyTotal] = useState(0)
+  const [unique_categories, setUniqueCategories] = useState<string[]>([])
 
   useEffect(() => {
     fetch_existing_data()
+    fetch_unique_categories()
   }, [])
+
+  const fetch_unique_categories = async () => {
+    try {
+      const { getUniqueCategories } = await import('@/services/subscriptions')
+      const categories = await getUniqueCategories()
+      setUniqueCategories(categories)
+    } catch (error) {
+      console.error('Error fetching unique categories:', error)
+      setUniqueCategories([])
+    }
+  }
 
   const fetch_existing_data = async () => {
     try {
@@ -110,11 +117,12 @@ export default function SubscriptionsPage() {
       })
       toast.success('Subscription saved successfully!')
       fetch_existing_data()
+      fetch_unique_categories()
       // Reset form
       setFormData({
         name: '',
         purpose: '',
-        category: 'Personal',
+        category: '',
         cost: 0,
         billing_frequency: 'MONTHLY',
         start_date: '',
@@ -182,6 +190,7 @@ export default function SubscriptionsPage() {
       })
       toast.success('Subscription updated successfully!')
       fetch_existing_data()
+      fetch_unique_categories()
       setIsEditDialogOpen(false)
       setEditingSubscription(null)
       setEditDate(undefined)
@@ -204,6 +213,7 @@ export default function SubscriptionsPage() {
       await deleteSubscription(delete_subscription_id)
       toast.success('Subscription deleted successfully!')
       fetch_existing_data()
+      fetch_unique_categories()
       setIsDeleteDialogOpen(false)
       setDeleteSubscriptionId(null)
     } catch (error) {
@@ -233,10 +243,17 @@ export default function SubscriptionsPage() {
   }
 
   // Group subscriptions by category
-  const grouped_subscriptions = categories.reduce((acc, category) => {
-    acc[category] = (existing_data || []).filter(sub => sub.category === category)
+  const grouped_subscriptions = (existing_data || []).reduce((acc, sub) => {
+    const category = sub.category || 'Uncategorized'
+    if (!acc[category]) {
+      acc[category] = []
+    }
+    acc[category].push(sub)
     return acc
   }, {} as Record<string, Subscription[]>)
+
+  // Get all categories from existing data, sorted
+  const all_categories = Object.keys(grouped_subscriptions).sort()
 
   // Calculate monthly total per category
   const get_category_monthly_total = (category_subscriptions: Subscription[]): number => {
@@ -273,7 +290,7 @@ export default function SubscriptionsPage() {
         </Card>
 
         {/* Tables grouped by Category */}
-        {categories.map((category) => {
+        {all_categories.map((category) => {
           const category_subscriptions = grouped_subscriptions[category] || []
           const category_monthly_total = get_category_monthly_total(category_subscriptions)
           
@@ -405,21 +422,14 @@ export default function SubscriptionsPage() {
                 {/* Category */}
                 <div className="space-y-2">
                   <Label htmlFor="category" className="text-sm font-semibold">Category *</Label>
-                  <Select
+                  <TextAutocomplete
+                    id="category"
                     value={form_data.category}
-                    onValueChange={(value) => setFormData({ ...form_data, category: value })}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(value) => setFormData({ ...form_data, category: value })}
+                    options={unique_categories}
+                    placeholder="Enter or select category"
+                    required
+                  />
                 </div>
 
                 {/* Cost */}
@@ -538,21 +548,14 @@ export default function SubscriptionsPage() {
                 {/* Category */}
                 <div className="space-y-2">
                   <Label htmlFor="edit_category" className="text-sm font-semibold">Category *</Label>
-                  <Select
+                  <TextAutocomplete
+                    id="edit_category"
                     value={edit_form_data.category}
-                    onValueChange={(value) => setEditFormData({ ...edit_form_data, category: value })}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(value) => setEditFormData({ ...edit_form_data, category: value })}
+                    options={unique_categories}
+                    placeholder="Enter or select category"
+                    required
+                  />
                 </div>
 
                 {/* Cost */}
