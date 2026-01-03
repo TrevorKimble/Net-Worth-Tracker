@@ -132,7 +132,6 @@ export default function PersonalPortfolioPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Personal Portfolio</h1>
-            <p className="text-muted-foreground mt-2">Manage your personal assets</p>
           </div>
           <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

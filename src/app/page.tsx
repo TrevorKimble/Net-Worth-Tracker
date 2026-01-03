@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/main-layout'
 import { AssetChart } from '@/components/asset-chart'
+import { SmallAssetChart } from '@/components/small-asset-chart'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, Wallet, Coins, Gem, CircleDollarSign } from 'lucide-react'
 
@@ -51,10 +52,7 @@ export default function Home() {
     <MainLayout>
       <div className="p-8 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Overview of your financial portfolio and trends
-          </p>
+          <h1 className="text-3xl font-bold text-foreground">Combined Portfolio</h1>
         </div>
 
         {/* Summary Cards */}
@@ -218,6 +216,14 @@ export default function Home() {
           <div className="lg:col-span-2">
             <AssetChart />
           </div>
+        </div>
+
+        {/* Small Charts Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SmallAssetChart symbol="FXAIX" title="S&P 500" />
+          <SmallAssetChart symbol="BINANCE:BTCUSD" title="Bitcoin" />
+          <SmallAssetChart symbol="TVC:GOLD" title="Gold" />
+          <SmallAssetChart symbol="TVC:SILVER" title="Silver" />
         </div>
       </div>
     </MainLayout>

@@ -297,11 +297,9 @@ export default function ConversionsPage() {
   return (
     <MainLayout>
       <div className="p-8 space-y-6">
-        {/* Header with Add Button */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Solo 401k Contributions</h1>
-            <p className="text-muted-foreground mt-2">Track your Solo 401k contributions and limits</p>
           </div>
           <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

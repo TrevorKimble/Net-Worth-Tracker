@@ -272,7 +272,6 @@ export default function IncomePage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground">Income</h1>
-            <p className="text-muted-foreground mt-2">Track your income sources</p>
           </div>
           <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
             <Plus className="h-4 w-4" />

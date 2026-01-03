@@ -146,8 +146,7 @@ export default function MonthlyInputPage() {
     <MainLayout>
       <div className="p-8 space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Monthly Input</h1>
-          <p className="text-muted-foreground mt-2">Quick monthly estimates for your assets</p>
+          <h1 className="text-3xl font-bold text-foreground">Monthly Estimates</h1>
         </div>
         
         {/* Monthly Input Chart */}
