@@ -57,6 +57,8 @@ export function AssetDisplay({
   const setAddDialogOpen = on_controlled_add_dialog_change || setInternalAddDialogOpen
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
+  const [chartDialogOpen, setChartDialogOpen] = useState(false)
+  const [selectedChartAsset, setSelectedChartAsset] = useState<Asset | null>(null)
   const [newAsset, setNewAsset] = useState({
     symbol: '',
     name: '',
@@ -80,6 +82,37 @@ export function AssetDisplay({
 
   const formatLastUpdated = (dateString: string) => {
     return new Date(dateString).toLocaleDateString()
+  }
+
+  const format_symbol_for_tradingview = (symbol: string, asset_type: string): string => {
+    switch (asset_type) {
+      case 'STOCK':
+        // Stocks use symbol as-is
+        return symbol
+      case 'CRYPTO':
+        // Crypto: convert "BTC" to "BINANCE:BTCUSD" or "COINBASE:BTC-USD"
+        // Try BINANCE first as it's more common
+        if (symbol.includes('/')) {
+          // Already formatted like "BTC/USD"
+          const [base, quote] = symbol.split('/')
+          return `BINANCE:${base}${quote}`
+        }
+        return `BINANCE:${symbol}USD`
+      case 'GOLD':
+        return 'TVC:GOLD'
+      case 'SILVER':
+        return 'TVC:SILVER'
+      default:
+        return symbol
+    }
+  }
+
+  const handle_symbol_click = (asset: Asset) => {
+    // Only show chart for chartable assets (not CASH or MISC)
+    if (asset.type !== 'CASH' && asset.type !== 'MISC') {
+      setSelectedChartAsset(asset)
+      setChartDialogOpen(true)
+    }
   }
 
   const handleAddAsset = async (e: React.FormEvent) => {
@@ -176,7 +209,16 @@ export function AssetDisplay({
               <tbody>
                 {asset_list.map((asset) => (
                   <tr key={asset.id} className="border-b hover:bg-accent/50">
-                    <td className="py-3 px-4 font-mono font-medium">{asset.symbol}</td>
+                    <td 
+                      className={`py-3 px-4 font-mono font-medium ${
+                        asset.type !== 'CASH' && asset.type !== 'MISC' 
+                          ? 'cursor-pointer hover:text-primary hover:underline' 
+                          : ''
+                      }`}
+                      onClick={() => handle_symbol_click(asset)}
+                    >
+                      {asset.symbol}
+                    </td>
                     <td className="py-3 px-4">{asset.name}</td>
                     <td className="py-3 px-4">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -504,6 +546,28 @@ export function AssetDisplay({
                 </Button>
               </div>
             </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Chart Dialog */}
+      <Dialog open={chartDialogOpen} onOpenChange={setChartDialogOpen}>
+        <DialogContent className="!max-w-[95vw] !w-[95vw] !h-[95vh] !max-h-[95vh] p-0">
+          <DialogHeader className="px-6 pt-6 pb-2">
+            <DialogTitle>
+              {selectedChartAsset ? `${selectedChartAsset.name} (${selectedChartAsset.symbol})` : 'Price Chart'}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedChartAsset && (
+            <div className="w-full px-6 pb-6 flex-1 overflow-hidden" style={{ height: 'calc(95vh - 80px)' }}>
+              <iframe
+                key={selectedChartAsset.id}
+                src={`https://www.tradingview.com/widgetembed/?symbol=${encodeURIComponent(format_symbol_for_tradingview(selectedChartAsset.symbol, selectedChartAsset.type))}&interval=D&theme=dark&style=3&locale=en&hide_side_toolbar=false&allow_symbol_change=false&calendar=false`}
+                style={{ width: '100%', height: '100%', border: 'none' }}
+                title={`${selectedChartAsset.symbol} Price Chart`}
+                allow="clipboard-write"
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
