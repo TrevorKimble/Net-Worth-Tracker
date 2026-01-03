@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Autocomplete } from "@/components/ui/autocomplete"
 import { Plus, Edit, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -33,6 +33,8 @@ interface AssetDisplayProps {
   empty_state_icon?: React.ReactNode
   empty_state_title?: string
   empty_state_description?: string
+  is_add_dialog_open?: boolean
+  on_add_dialog_change?: (open: boolean) => void
 }
 
 export function AssetDisplay({
@@ -44,9 +46,15 @@ export function AssetDisplay({
   portfolio_type,
   empty_state_icon,
   empty_state_title,
-  empty_state_description
+  empty_state_description,
+  is_add_dialog_open: controlled_add_dialog_open,
+  on_add_dialog_change: on_controlled_add_dialog_change
 }: AssetDisplayProps) {
-  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [internal_add_dialog_open, setInternalAddDialogOpen] = useState(false)
+  
+  // Use controlled state if provided, otherwise use internal state
+  const addDialogOpen = controlled_add_dialog_open !== undefined ? controlled_add_dialog_open : internal_add_dialog_open
+  const setAddDialogOpen = on_controlled_add_dialog_change || setInternalAddDialogOpen
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
   const [newAsset, setNewAsset] = useState({
@@ -217,20 +225,8 @@ export function AssetDisplay({
 
   return (
     <>
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Actions</CardTitle>
-          <Plus className="h-4 w-4 text-purple-600" />
-        </CardHeader>
-        <CardContent>
-          <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Asset
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+        <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add New Asset</DialogTitle>
                 <DialogDescription>
@@ -359,8 +355,6 @@ export function AssetDisplay({
               </form>
             </DialogContent>
           </Dialog>
-        </CardContent>
-      </Card>
 
       {assets.length === 0 ? (
         <Card>

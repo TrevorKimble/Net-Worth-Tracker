@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { MainLayout } from '@/components/main-layout'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { AssetDisplay } from "@/components/AssetDisplay"
-import { TrendingUp, Wallet, Coins, Gem, CircleDollarSign } from 'lucide-react'
+import { TrendingUp, Wallet, Coins, Gem, CircleDollarSign, Plus } from 'lucide-react'
 
 interface PersonalAsset {
   id: number
@@ -122,12 +123,21 @@ export default function PersonalPortfolioPage() {
     return total_value > 0 ? (value / total_value) * 100 : 0
   }
 
+  const [is_add_dialog_open, setIsAddDialogOpen] = useState(false)
+
   return (
     <MainLayout>
       <div className="p-8 space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Personal Portfolio</h1>
-          <p className="text-muted-foreground mt-2">Manage your personal assets</p>
+        {/* Header with Add Button */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Personal Portfolio</h1>
+            <p className="text-muted-foreground mt-2">Manage your personal assets</p>
+          </div>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add Asset
+          </Button>
         </div>
 
         {/* Summary Cards */}
@@ -298,6 +308,8 @@ export default function PersonalPortfolioPage() {
               onEdit={handleEditAsset}
               onDelete={handleDeleteAsset}
               portfolio_type="personal"
+              is_add_dialog_open={is_add_dialog_open}
+              on_add_dialog_change={setIsAddDialogOpen}
             />
           </CardContent>
         </Card>
