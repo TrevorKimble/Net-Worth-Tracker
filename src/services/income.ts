@@ -8,6 +8,7 @@ interface IncomeEntry {
   income_source: string
   amount: number
   notes: string | null
+  is_self_employment_income: boolean
   createdAt: string
   updatedAt: string
 }
@@ -17,6 +18,7 @@ interface CreateIncomeEntryData {
   income_source: string
   amount: number
   notes?: string | null
+  is_self_employment_income?: boolean
 }
 
 interface UpdateIncomeEntryData {
@@ -25,6 +27,12 @@ interface UpdateIncomeEntryData {
   income_source: string
   amount: number
   notes?: string | null
+  is_self_employment_income?: boolean
+}
+
+interface IncomeSourceMetadata {
+  income_source: string
+  is_self_employment_income: boolean
 }
 
 function format_date(): string {
@@ -71,6 +79,7 @@ export async function createIncomeEntry(entry_data: CreateIncomeEntryData): Prom
       income_source,
       amount: parseFloat(amount.toString()),
       notes: notes || null,
+      is_self_employment_income: entry_data.is_self_employment_income || false,
       createdAt: current_date,
       updatedAt: current_date
     })
@@ -103,6 +112,7 @@ export async function updateIncomeEntry(entry_data: UpdateIncomeEntryData): Prom
       income_source,
       amount: parseFloat(amount.toString()),
       notes: notes || null,
+      is_self_employment_income: entry_data.is_self_employment_income !== undefined ? entry_data.is_self_employment_income : false,
       updatedAt: current_date
     })
     .eq('id', id)
@@ -155,6 +165,27 @@ export async function getUniqueIncomeSources(): Promise<string[]> {
   )).sort()
 
   return unique_sources
+}
+
+export async function getIncomeSourceMetadata(income_source: string): Promise<IncomeSourceMetadata | null> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('income')
+    .select('income_source, is_self_employment_income')
+    .eq('income_source', income_source)
+    .order('createdAt', { ascending: false })
+    .limit(1)
+    .single()
+
+  if (error || !data) {
+    return null
+  }
+
+  return {
+    income_source: data.income_source,
+    is_self_employment_income: data.is_self_employment_income || false
+  }
 }
 
 

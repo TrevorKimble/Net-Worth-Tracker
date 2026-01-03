@@ -10,11 +10,14 @@ import { Save, Edit, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 
 interface Solo401kConversion {
   id?: number
   date: string
   amount: number
+  is_employer_contribution?: boolean
+  is_employee_contribution?: boolean
   notes?: string
 }
 
@@ -22,6 +25,8 @@ export default function ConversionsPage() {
   const [form_data, setFormData] = useState<Solo401kConversion>({
     date: '',
     amount: 0,
+    is_employer_contribution: false,
+    is_employee_contribution: false,
     notes: ''
   })
   const [selected_date, setSelectedDate] = useState<Date | undefined>(undefined)
@@ -31,6 +36,8 @@ export default function ConversionsPage() {
   const [edit_date, setEditDate] = useState<Date | undefined>(undefined)
   const [edit_form_data, setEditFormData] = useState<Omit<Solo401kConversion, 'id' | 'date'>>({
     amount: 0,
+    is_employer_contribution: false,
+    is_employee_contribution: false,
     notes: ''
   })
   const [delete_entry_id, setDeleteEntryId] = useState<number | null>(null)
@@ -74,6 +81,8 @@ export default function ConversionsPage() {
       setFormData({
         date: '',
         amount: 0,
+        is_employer_contribution: false,
+        is_employee_contribution: false,
         notes: ''
       })
       setSelectedDate(undefined)
@@ -94,6 +103,8 @@ export default function ConversionsPage() {
     setEditDate(entry_date)
     setEditFormData({
       amount: entry.amount,
+      is_employer_contribution: entry.is_employer_contribution || false,
+      is_employee_contribution: entry.is_employee_contribution || false,
       notes: entry.notes || ''
     })
     setIsEditDialogOpen(true)
@@ -192,6 +203,47 @@ export default function ConversionsPage() {
                     />
                   </div>
 
+                  {/* Contribution Type Switches */}
+                  <div className="space-y-4">
+                    <Label className="text-sm font-semibold">Contribution Type</Label>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Label htmlFor="employer_contribution" className="text-sm font-medium cursor-pointer">
+                          Employer Contribution
+                        </Label>
+                        <Switch
+                          id="employer_contribution"
+                          checked={form_data.is_employer_contribution || false}
+                          onCheckedChange={(checked) => {
+                            setFormData({
+                              ...form_data,
+                              is_employer_contribution: checked,
+                              is_employee_contribution: checked ? false : form_data.is_employee_contribution
+                            })
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Label htmlFor="employee_contribution" className="text-sm font-medium cursor-pointer">
+                          Employee Contribution
+                        </Label>
+                        <Switch
+                          id="employee_contribution"
+                          checked={form_data.is_employee_contribution || false}
+                          onCheckedChange={(checked) => {
+                            setFormData({
+                              ...form_data,
+                              is_employee_contribution: checked,
+                              is_employer_contribution: checked ? false : form_data.is_employer_contribution
+                            })
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Notes */}
                   <div>
                     <Label htmlFor="notes">Notes (Optional)</Label>
@@ -241,16 +293,19 @@ export default function ConversionsPage() {
                   <tr className="border-b border-border">
                     <th className="text-left p-2 font-medium">Date</th>
                     <th className="text-left p-2 font-medium">Amount</th>
+                    <th className="text-left p-2 font-medium">Type</th>
                     <th className="text-left p-2 font-medium">Notes</th>
                     <th className="text-right p-2 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(existing_data || []).map((entry) => {
+                    const contribution_type = entry.is_employer_contribution ? 'Employer' : entry.is_employee_contribution ? 'Employee' : 'None'
                     return (
                       <tr key={entry.id} className="border-b border-border hover:bg-muted/50">
                         <td className="p-2">{entry.date}</td>
-                        <td className="p-2">${entry.amount.toLocaleString()}</td>
+                        <td className="p-2">${entry.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="p-2">{contribution_type}</td>
                         <td className="p-2 text-muted-foreground">{entry.notes || '-'}</td>
                         <td className="p-2">
                           <div className="flex justify-end gap-2">
@@ -280,7 +335,7 @@ export default function ConversionsPage() {
                   })}
                   {(!existing_data || existing_data.length === 0) && (
                     <tr>
-                      <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
                         No conversion entries yet
                       </td>
                     </tr>
@@ -317,6 +372,46 @@ export default function ConversionsPage() {
                   onChange={(e) => setEditFormData({ ...edit_form_data, amount: parseFloat(e.target.value) || 0 })}
                   placeholder="0.00"
                 />
+              </div>
+              {/* Contribution Type Switches */}
+              <div className="space-y-4">
+                <Label className="text-sm font-semibold">Contribution Type</Label>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="edit_employer_contribution" className="text-sm font-medium cursor-pointer">
+                      Employer Contribution
+                    </Label>
+                    <Switch
+                      id="edit_employer_contribution"
+                      checked={edit_form_data.is_employer_contribution || false}
+                      onCheckedChange={(checked) => {
+                        setEditFormData({
+                          ...edit_form_data,
+                          is_employer_contribution: checked,
+                          is_employee_contribution: checked ? false : edit_form_data.is_employee_contribution
+                        })
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor="edit_employee_contribution" className="text-sm font-medium cursor-pointer">
+                      Employee Contribution
+                    </Label>
+                    <Switch
+                      id="edit_employee_contribution"
+                      checked={edit_form_data.is_employee_contribution || false}
+                      onCheckedChange={(checked) => {
+                        setEditFormData({
+                          ...edit_form_data,
+                          is_employee_contribution: checked,
+                          is_employer_contribution: checked ? false : edit_form_data.is_employer_contribution
+                        })
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
               <div>
                 <Label htmlFor="edit_notes">Notes (Optional)</Label>

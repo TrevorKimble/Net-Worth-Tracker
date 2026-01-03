@@ -13,6 +13,7 @@ import { DatePicker } from "@/components/ui/date-picker"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { TextAutocomplete } from "@/components/ui/text-autocomplete"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, LabelList } from 'recharts'
+import { Checkbox } from "@/components/ui/checkbox"
 
 interface IncomeEntry {
   id?: number
@@ -20,6 +21,7 @@ interface IncomeEntry {
   income_source: string
   amount: number
   notes?: string
+  is_self_employment_income?: boolean
 }
 
 export default function IncomePage() {
@@ -27,7 +29,8 @@ export default function IncomePage() {
     date: '',
     income_source: '',
     amount: 0,
-    notes: ''
+    notes: '',
+    is_self_employment_income: false
   })
   const [selected_date, setSelectedDate] = useState<Date | undefined>(undefined)
   const [loading, setLoading] = useState(false)
@@ -37,7 +40,8 @@ export default function IncomePage() {
   const [edit_form_data, setEditFormData] = useState<Omit<IncomeEntry, 'id' | 'date'>>({
     income_source: '',
     amount: 0,
-    notes: ''
+    notes: '',
+    is_self_employment_income: false
   })
   const [delete_entry_id, setDeleteEntryId] = useState<number | null>(null)
   const [is_add_dialog_open, setIsAddDialogOpen] = useState(false)
@@ -104,7 +108,8 @@ export default function IncomePage() {
         date: '',
         income_source: '',
         amount: 0,
-        notes: ''
+        notes: '',
+        is_self_employment_income: false
       })
       setSelectedDate(undefined)
       setIsAddDialogOpen(false)
@@ -124,7 +129,8 @@ export default function IncomePage() {
       date: '',
       income_source: '',
       amount: 0,
-      notes: ''
+      notes: '',
+      is_self_employment_income: false
     })
     setSelectedDate(undefined)
   }
@@ -138,7 +144,8 @@ export default function IncomePage() {
     setEditFormData({
       income_source: entry.income_source,
       amount: entry.amount,
-      notes: entry.notes || ''
+      notes: entry.notes || '',
+      is_self_employment_income: entry.is_self_employment_income || false
     })
     setIsEditDialogOpen(true)
   }
@@ -390,6 +397,7 @@ export default function IncomePage() {
                     <th className="text-left p-2 font-medium">Date</th>
                     <th className="text-left p-2 font-medium">Income Source</th>
                     <th className="text-left p-2 font-medium">Amount</th>
+                    <th className="text-left p-2 font-medium">Self Employment</th>
                     <th className="text-left p-2 font-medium">Notes</th>
                     <th className="text-right p-2 font-medium">Actions</th>
                   </tr>
@@ -401,6 +409,7 @@ export default function IncomePage() {
                         <td className="p-2">{entry.date}</td>
                         <td className="p-2">{entry.income_source}</td>
                         <td className="p-2">${entry.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="p-2">{entry.is_self_employment_income ? 'Yes' : 'No'}</td>
                         <td className="p-2 text-muted-foreground">{entry.notes || '-'}</td>
                         <td className="p-2">
                           <div className="flex justify-end gap-2">
@@ -430,7 +439,7 @@ export default function IncomePage() {
                   })}
                   {paginated_entries.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="p-4 text-center text-muted-foreground">
+                      <td colSpan={6} className="p-4 text-center text-muted-foreground">
                         No income entries for {selected_year}
                       </td>
                     </tr>
@@ -512,11 +521,39 @@ export default function IncomePage() {
                   <TextAutocomplete
                     id="income_source"
                     value={form_data.income_source}
-                    onChange={(value) => setFormData({ ...form_data, income_source: value })}
+                    onChange={async (value) => {
+                      setFormData({ ...form_data, income_source: value })
+                      // Check if this income source has is_self_employment_income set to true
+                      if (value) {
+                        try {
+                          const { getIncomeSourceMetadata } = await import('@/services/income')
+                          const metadata = await getIncomeSourceMetadata(value)
+                          if (metadata?.is_self_employment_income) {
+                            setFormData(prev => ({ ...prev, income_source: value, is_self_employment_income: true }))
+                          }
+                        } catch (error) {
+                          console.error('Error fetching income source metadata:', error)
+                        }
+                      }
+                    }}
                     options={unique_income_sources}
                     placeholder="Enter or select income source"
                     required
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Is Self Employment Income */}
+                <div className="space-y-2 flex items-center gap-2">
+                  <Checkbox
+                    id="is_self_employment_income"
+                    checked={form_data.is_self_employment_income || false}
+                    onCheckedChange={(checked) => setFormData({ ...form_data, is_self_employment_income: checked === true })}
+                  />
+                  <Label htmlFor="is_self_employment_income" className="text-sm font-semibold cursor-pointer">
+                    Self Employment Income
+                  </Label>
                 </div>
               </div>
 
@@ -587,11 +624,39 @@ export default function IncomePage() {
                   <TextAutocomplete
                     id="edit_income_source"
                     value={edit_form_data.income_source}
-                    onChange={(value) => setEditFormData({ ...edit_form_data, income_source: value })}
+                    onChange={async (value) => {
+                      setEditFormData({ ...edit_form_data, income_source: value })
+                      // Check if this income source has is_self_employment_income set to true
+                      if (value) {
+                        try {
+                          const { getIncomeSourceMetadata } = await import('@/services/income')
+                          const metadata = await getIncomeSourceMetadata(value)
+                          if (metadata?.is_self_employment_income) {
+                            setEditFormData(prev => ({ ...prev, income_source: value, is_self_employment_income: true }))
+                          }
+                        } catch (error) {
+                          console.error('Error fetching income source metadata:', error)
+                        }
+                      }
+                    }}
                     options={unique_income_sources}
                     placeholder="Enter or select income source"
                     required
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Is Self Employment Income */}
+                <div className="space-y-2 flex items-center gap-2">
+                  <Checkbox
+                    id="edit_is_self_employment_income"
+                    checked={edit_form_data.is_self_employment_income || false}
+                    onCheckedChange={(checked) => setEditFormData({ ...edit_form_data, is_self_employment_income: checked === true })}
+                  />
+                  <Label htmlFor="edit_is_self_employment_income" className="text-sm font-semibold cursor-pointer">
+                    Self Employment Income
+                  </Label>
                 </div>
               </div>
 

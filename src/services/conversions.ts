@@ -6,6 +6,8 @@ interface Solo401kConversion {
   id: number
   date: string
   amount: number
+  is_employer_contribution: boolean
+  is_employee_contribution: boolean
   notes: string | null
   createdAt: string
   updatedAt: string
@@ -14,6 +16,8 @@ interface Solo401kConversion {
 interface CreateConversionData {
   date: string
   amount: number
+  is_employer_contribution?: boolean
+  is_employee_contribution?: boolean
   notes?: string | null
 }
 
@@ -21,6 +25,8 @@ interface UpdateConversionData {
   id: number
   date: string
   amount: number
+  is_employer_contribution?: boolean
+  is_employee_contribution?: boolean
   notes?: string | null
 }
 
@@ -52,10 +58,15 @@ export async function getConversions(): Promise<Solo401kConversion[]> {
 
 export async function createConversion(conversion_data: CreateConversionData): Promise<Solo401kConversion> {
   const supabase = await createClient()
-  const { date, amount, notes } = conversion_data
+  const { date, amount, is_employer_contribution, is_employee_contribution, notes } = conversion_data
 
   if (!date || amount === undefined) {
     throw new Error('Date and amount are required')
+  }
+
+  // Ensure only one is true
+  if (is_employer_contribution && is_employee_contribution) {
+    throw new Error('Cannot have both employer and employee contribution set to true')
   }
 
   const current_date = format_date()
@@ -66,6 +77,8 @@ export async function createConversion(conversion_data: CreateConversionData): P
     .insert({
       date: formatted_date,
       amount: parseFloat(amount.toString()),
+      is_employer_contribution: is_employer_contribution || false,
+      is_employee_contribution: is_employee_contribution || false,
       notes: notes || null,
       createdAt: current_date,
       updatedAt: current_date
@@ -83,10 +96,15 @@ export async function createConversion(conversion_data: CreateConversionData): P
 
 export async function updateConversion(conversion_data: UpdateConversionData): Promise<Solo401kConversion> {
   const supabase = await createClient()
-  const { id, date, amount, notes } = conversion_data
+  const { id, date, amount, is_employer_contribution, is_employee_contribution, notes } = conversion_data
 
   if (!date || amount === undefined) {
     throw new Error('Date and amount are required')
+  }
+
+  // Ensure only one is true
+  if (is_employer_contribution && is_employee_contribution) {
+    throw new Error('Cannot have both employer and employee contribution set to true')
   }
 
   const current_date = format_date()
@@ -97,6 +115,8 @@ export async function updateConversion(conversion_data: UpdateConversionData): P
     .update({
       date: formatted_date,
       amount: parseFloat(amount.toString()),
+      is_employer_contribution: is_employer_contribution !== undefined ? is_employer_contribution : false,
+      is_employee_contribution: is_employee_contribution !== undefined ? is_employee_contribution : false,
       notes: notes || null,
       updatedAt: current_date
     })
